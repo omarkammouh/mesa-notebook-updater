@@ -1,0 +1,525 @@
+{
+ "$comment": "Schema v2. Version-agnostic pattern database for scan_notebook.py. Each entry carries a LIFECYCLE ({introduced, deprecated, superseded, removed}) as strict version strings (parsed by mesa_versions.parse_version; prose is a hard load-time error). The scanner COMPUTES a status at the --target: not-yet-introduced (API newer than target) > removed (errors at target) > deprecated (warns at target) > legacy (silently superseded, slated for removal) > current. There is no materialized status. Lifecycle stamps are empirically verified (see scripts note): probed on mesa 2.3.4/3.0.3/3.1.5/3.2.0/3.3.1/3.4.2/3.5.1. Mesa-4 removals use removed:'4.0.0a0' so a 4.0.0a0 target computes them removed. Field semantics: kind = api|prose|install (default api). judge:true = surface the hit for human check even when computed status is current. applicable_min/applicable_max = the entry's CONCERN only exists in [min,max) (opposite polarity to API existence; e.g. reserved-name assignment only harms >=3.0.0). by_target = [{min,max,replacement,note,status}] band overrides, first match wins (min incl, max excl). replacement may contain {TARGET}. For old-API entries replacement is the forward fix; for anachronism (not-yet-introduced) entries it is the target-era form (the downgrade/don't-overshoot work list). Every hit is fixed or explicitly judged a false positive in the report — never skipped silently. When Mesa releases a new version, extend this file together with version-catalog.json and version-history.md (see SKILL.md 'Maintaining the version history').",
+ "schema": 2,
+ "entries": [
+  {
+   "id": "scheduler-classes",
+   "kind": "api",
+   "patterns": ["\\b(BaseScheduler|RandomActivation|SimultaneousActivation|StagedActivation|RandomActivationByType)\\b"],
+   "applies_to": "both",
+   "introduced": null,
+   "deprecated": "3.0.0",
+   "removed": "3.1.0",
+   "replacement": "AgentSet: agents.do(\"step\") / agents.shuffle_do(\"step\") / agents_by_type[T].shuffle_do(\"step\") — see version-history.md §4.1",
+   "note": "SimultaneousActivation -> agents.do(\"step\") then agents.do(\"advance\"). In markdown/comments: rewrite the explanation to the AgentSet mechanism. At target 2.x these ARE current (schedulers are the API) — the deprecated/removed stamps suppress the finding below 3.0."
+  },
+  {
+   "id": "mesa-time-scheduler-import",
+   "kind": "api",
+   "patterns": ["from mesa\\.time import[^\\n]*\\b(BaseScheduler|RandomActivation|SimultaneousActivation|StagedActivation|RandomActivationByType)\\b", "\\bmesa\\.time\\.(BaseScheduler|RandomActivation|SimultaneousActivation|StagedActivation|RandomActivationByType)\\b"],
+   "applies_to": "both",
+   "introduced": null,
+   "deprecated": "3.0.0",
+   "removed": "3.1.0",
+   "replacement": "Drop the scheduler import; use the AgentSet API (version-history.md §4).",
+   "note": "The scheduler names inside mesa.time. Verified: works 2.3/3.0, ModuleNotFoundError 3.1–3.4, ImportError 3.5+ (name reused for events). Split from the event-import entry by the imported NAME."
+  },
+  {
+   "id": "mesa-time-event-import",
+   "kind": "api",
+   "patterns": ["from mesa\\.time import[^\\n]*\\b(Schedule|Event|EventGenerator|EventList|Priority)\\b"],
+   "applies_to": "both",
+   "introduced": "3.5.0",
+   "replacement": "Event scheduling (Schedule/Event/EventGenerator) only exists from Mesa 3.5. Below 3.5 there is no event system — use classic model.step() loops (and Simulator classes 3.0–3.4 if event-driven).",
+   "note": "mesa.time was REUSED in 3.5 for the event system. Verified: this import works only on 3.5+. At a <3.5 target it is not-yet-introduced."
+  },
+  {
+   "id": "mesa-time-bare",
+   "kind": "api",
+   "patterns": ["\\bmesa\\.time\\b", "^\\s*import mesa\\.time\\b", "from mesa import time\\b"],
+   "applies_to": "both",
+   "judge": true,
+   "replacement": "Depends on target: <3.1 scheduler module; 3.1–3.4 the module does not exist at all; 3.5+ the event module.",
+   "by_target": [
+    {"max": "3.1.0", "note": "mesa.time is the SCHEDULER module here (deprecated from 3.0). Verify the use is a scheduler, migrate to AgentSet if the target is >=3.0."},
+    {"min": "3.1.0", "max": "3.5.0", "note": "mesa.time DOES NOT EXIST at this target (removed 3.1, event system not added until 3.5). Any mesa.time reference errors — remove it."},
+    {"min": "3.5.0", "note": "mesa.time is the EVENT module (Schedule/Event/EventGenerator) — current. Scheduler names inside it are dead."}
+   ],
+   "note": "Bare mesa.time reference not caught by the name-split entries above."
+  },
+  {
+   "id": "schedule-attribute",
+   "kind": "api",
+   "patterns": ["\\bself\\.schedule\\b", "\\bmodel\\.schedule\\b", "\\.schedule\\.(step|steps|time|agents|add|remove|get_agent_count|agents_by_type|step_type)\\b", "\\bschedule\\.steps?\\b"],
+   "applies_to": "both",
+   "introduced": null,
+   "removed": "3.0.0",
+   "replacement": "schedule.step()->agents.shuffle_do(\"step\") (per scheduler type); schedule.agents->model.agents; schedule.steps->model.steps; schedule.time->model.steps; schedule.add->automatic on agent creation; schedule.remove(a)->a.remove(); get_agent_count()->len(model.agents)",
+   "note": "There is no self.schedule in Mesa 3.x. schedule_event/schedule_recurring (3.5 Model methods) are different and current — they match the model-run-control entry, not this one. (schedule.time maps to model.steps, which works through 3.5; model.time is the 3.4+ universal clock — recommending model.time at a <=3.3 target would overshoot and AttributeError.) The bare `schedule.step()`/`schedule.steps` form (no self./model. prefix — common in markdown inline code) is also matched; a non-Mesa `schedule` variable is a rare false positive, judge it."
+  },
+  {
+   "id": "agent-unique-id-init",
+   "kind": "api",
+   "patterns": ["def __init__\\(self,\\s*unique_id", "super\\(\\)\\s*\\.__init__\\(\\s*unique_id", "__init__\\(self,\\s*unique_id"],
+   "applies_to": "both",
+   "introduced": null,
+   "removed": "3.0.0",
+   "replacement": "def __init__(self, model, ...): super().__init__(model) — unique_id is auto-assigned (int, per model, from 1)",
+   "note": "Verified: super().__init__(unique_id, model) raises TypeError on 3.0+. Also fix every call site that still passes an id: MyAgent(i, self) -> MyAgent(self). Custom ids go in your own attribute."
+  },
+  {
+   "id": "next-id",
+   "kind": "api",
+   "patterns": ["\\.next_id\\(\\)"],
+   "applies_to": "both",
+   "introduced": null,
+   "removed": "3.0.0",
+   "replacement": "Delete — unique_id is auto-assigned on agent creation."
+  },
+  {
+   "id": "initialize-data-collector",
+   "kind": "api",
+   "patterns": ["initialize_data_collector"],
+   "applies_to": "both",
+   "introduced": null,
+   "removed": "3.0.0",
+   "replacement": "self.datacollector = mesa.DataCollector(model_reporters=..., agent_reporters=..., agenttype_reporters=...); call self.datacollector.collect(self) yourself."
+  },
+  {
+   "id": "mesa-flat",
+   "kind": "api",
+   "patterns": ["mesa\\.flat"],
+   "applies_to": "both",
+   "introduced": null,
+   "deprecated": "2.3.0",
+   "removed": "3.0.0",
+   "replacement": "Full namespace imports.",
+   "note": "Verified: emits UserWarning on 2.3.4, ModuleNotFoundError on 3.0+."
+  },
+  {
+   "id": "old-visualization",
+   "kind": "api",
+   "patterns": ["ModularServer", "ModularVisualization", "mesa\\.visualization\\.modules", "\\bCanvasGrid\\b", "\\bChartModule\\b", "\\bNetworkModule\\b", "\\bBarChartModule\\b", "\\bPieChartModule\\b", "UserSettableParameter", "\\bTextElement\\b", "viz-tornado", "server\\.launch\\(\\)"],
+   "applies_to": "both",
+   "introduced": null,
+   "removed": "3.0.0",
+   "replacement": "SolaraViz + SpaceRenderer + AgentPortrayalStyle (version-history.md §9.2). In notebooks: page = SolaraViz(model, renderer, components=[...]); trailing `page` renders inline.",
+   "note": "Verified: ModularServer/CanvasGrid removed on 3.0+. A ModularServer.launch() cell blocks a notebook forever — must be rewritten, not kept. At a 2.x target this is the CURRENT viz stack (finding suppressed below 3.0)."
+  },
+  {
+   "id": "portrayal-dict-2x-keys",
+   "kind": "api",
+   "patterns": ["[\"']Shape[\"']\\s*:", "[\"']Filled[\"']\\s*:", "[\"']Layer[\"']\\s*:", "[\"']Color[\"']\\s*:"],
+   "applies_to": "both",
+   "introduced": null,
+   "removed": "3.0.0",
+   "replacement": "AgentPortrayalStyle(color=..., marker=..., size=..., zorder=...) from mesa.visualization.components (3.3+); at a 3.0–3.2 target use a lowercase portrayal dict {\"color\",\"marker\",\"size\"}.",
+   "note": "2.x portrayal dict keys (Shape/Filled/Layer/Color). Removed with the old viz stack in 3.0. Current at a 2.x target. NOTE (3.3+): returning ANY plain dict from agent_portrayal (even lowercase {\"color\",\"marker\",\"size\"}) is deprecated once AgentPortrayalStyle exists and emits a DeprecationWarning per agent on 3.3.1+ — at targets >=3.3 the portrayal must return AgentPortrayalStyle, not a dict (regex can't safely detect a lowercase dict, so this is a semantic-pass item)."
+  },
+  {
+   "id": "make-space-component",
+   "kind": "api",
+   "patterns": ["make_space_component", "make_space_altair"],
+   "applies_to": "both",
+   "introduced": "3.0.0",
+   "deprecated": "3.5.0",
+   "removed": "4.0.0a0",
+   "replacement": "renderer = SpaceRenderer(model, backend=\"matplotlib\").setup_agents(agent_portrayal).render(); SolaraViz(model, renderer, components=[...])",
+   "note": "CURRENT at targets 3.0–3.4 (deprecated only in 3.5). make_plot_component is a separate entry and stays current. 'SpaceRenderer exists at 3.3' is a modernization-band preference, NOT a scanner finding below 3.5."
+  },
+  {
+   "id": "make-plot-component",
+   "kind": "api",
+   "patterns": ["\\bmake_plot_component\\b"],
+   "applies_to": "both",
+   "introduced": "3.0.0",
+   "judge": true,
+   "replacement": "make_plot_component(\"Measure\") — current throughout 3.x.",
+   "note": "Anachronism guard only: not-yet-introduced below 3.0. Otherwise current; judge surfaces it for the multipage/page= review."
+  },
+  {
+   "id": "make-plot-measure-or-text",
+   "kind": "api",
+   "patterns": ["make_plot_measure", "\\bmake_text\\b"],
+   "applies_to": "both",
+   "introduced": null,
+   "removed": "3.0.0",
+   "replacement": "make_plot_component(\"Measure\"); text components = a plain function returning a string, passed directly in components=[...]",
+   "note": "Transitional 3.0-alpha names; never in a stable release."
+  },
+  {
+   "id": "jupyterviz-alias",
+   "kind": "api",
+   "patterns": ["\\bJupyterViz\\b"],
+   "applies_to": "both",
+   "introduced": "2.2.0",
+   "superseded": "3.0.0",
+   "replacement": "SolaraViz (JupyterViz is a plain alias kept for 2.x-era code).",
+   "note": "Verified empirically: mesa.experimental.JupyterViz present already in 2.2.4; alias for SolaraViz from 3.0. Legacy (not an error) at 3.x targets."
+  },
+  {
+   "id": "batchrunner-class",
+   "kind": "api",
+   "patterns": ["\\bBatchRunner\\b", "\\bFixedBatchRunner\\b", "batch_run_MP", "mesa\\.batchrunner\\.Batch"],
+   "applies_to": "both",
+   "introduced": null,
+   "removed": "3.0.0",
+   "replacement": "mesa.batch_run(model_cls, parameters={...}, rng=[seeds] (3.4+) / iterations=n (≤3.3), max_steps=..., data_collection_period=...)",
+   "note": "Verified: BatchRunner class ImportError on all 3.x. Deprecated in 2.x."
+  },
+  {
+   "id": "batch-run-iterations",
+   "kind": "api",
+   "patterns": ["\\biterations\\s*="],
+   "applies_to": "code",
+   "introduced": null,
+   "deprecated": "3.4.0",
+   "removed": "4.0.0a0",
+   "replacement": "rng=[seed1, ..., seedN] — one run per seed per parameter combination; the model's __init__ must accept/forward rng",
+   "note": "Only inside mesa.batch_run(...) — verify the hit is a batch_run kwarg, not an unrelated variable. CURRENT at targets ≤3.3 (deprecated 3.4) — do not flag when targeting 3.0–3.3."
+  },
+  {
+   "id": "batch-run-rng",
+   "kind": "api",
+   "patterns": ["batch_run\\([^)]*\\brng\\s*="],
+   "applies_to": "both",
+   "introduced": "3.4.0",
+   "replacement": "At targets <3.4 batch_run has no rng= — use iterations=n (a fixed model seed gives n identical replications).",
+   "note": "Same-line batch_run(rng=...) only. Multi-line calls are caught by batch-run-checkpoint. rng as a MODEL kwarg is a separate entry (model-rng). applies_to:both so markdown/comments that DESCRIBE this API are flagged not-yet-introduced on a downgrade (prose staleness), and judge/suppressed at a target where it is current."
+  },
+  {
+   "id": "batch-run-checkpoint",
+   "kind": "api",
+   "patterns": ["batch_run\\("],
+   "applies_to": "code",
+   "introduced": null,
+   "removed": "4.0.0a0",
+   "judge": true,
+   "replacement": "batch_run is current in 3.x (removed in Mesa 4 -> Scenario).",
+   "note": "Checklist: iterations= vs rng= per target (rng only >=3.4); model accepts every parameter as kwarg and forwards rng/seed; model has self.datacollector; agenttype_reporters in batch_run need >=3.4.1; on 3.5.x an agent-reporters-ONLY DataCollector yields ZERO batch_run rows (verified) — ensure at least one model reporter and compare row counts pre/post migration."
+  },
+  {
+   "id": "model-seed-kwarg",
+   "kind": "api",
+   "patterns": ["super\\(\\)\\s*\\.__init__\\([^)]*\\bseed\\b", "def __init__\\(self[^)]*\\bseed\\s*[=,)]"],
+   "applies_to": "code",
+   "introduced": null,
+   "deprecated": "3.5.0",
+   "removed": "4.0.0a0",
+   "replacement": "rng parameter: def __init__(self, ..., rng=None): super().__init__(rng=rng). Seeds both self.random (stdlib) and self.rng (numpy Generator) consistently.",
+   "note": "Verified: seed= emits FutureWarning on 3.5.1, silent on ≤3.4. CURRENT at targets ≤3.4 — keep seed= when targeting 3.0–3.4. np.random.seed / random.seed hits are a different topic — judge. When renaming seed->rng, update every instantiation site, batch_run forwarding, and the reproducibility markdown."
+  },
+  {
+   "id": "agentset-indexing",
+   "kind": "api",
+   "patterns": ["\\.agents\\["],
+   "applies_to": "code",
+   "introduced": null,
+   "deprecated": "3.5.0",
+   "removed": "4.0.0a0",
+   "replacement": "model.agents.to_list()[i] / .to_list()[a:b]; random pick: model.random.choice(model.agents.to_list())",
+   "note": "Verified empirically on 3.5.1: AgentSet.__getitem__ is DEPRECATED (removed 4.0) but the warning is a PendingDeprecationWarning that fires only on DERIVED AgentSets (results of select()/shuffle()/explicit AgentSet(...)); the top-level model.agents[i] is SILENT (its type _HardKeyAgentSet is not an AgentSet subclass). Fix to .to_list()[i] regardless — it is a Mesa-4 removal. agents_by_type[SomeClass] is dict access and CURRENT — do not flag. Pattern keys on `.agents[` only (so a plain list stored from `.to_list()`, e.g. `agents = self.agents.to_list(); agents[0]`, is NOT flagged — index it freely). Derived AgentSets are not regex-visible — check in the semantic pass. CURRENT at targets ≤3.4."
+  },
+  {
+   "id": "simulators-devs",
+   "kind": "api",
+   "patterns": ["ABMSimulator", "DEVSimulator", "experimental\\.devs"],
+   "applies_to": "both",
+   "introduced": "2.3.0",
+   "deprecated": "3.5.0",
+   "removed": "4.0.0a0",
+   "replacement": "model.run_for(n) / model.run_until(t) / model.schedule_event(fn, at=...) / model.schedule_recurring(fn, Schedule(interval=...))",
+   "note": "Verified empirically: mesa.experimental.devs absent 2.2.4, present 2.3.4/2.4.0 and all 3.x; deprecated 3.5. CURRENT at targets 2.3–3.4. Below 2.3 not-yet-introduced."
+  },
+  {
+   "id": "experimental-cell-space",
+   "kind": "api",
+   "patterns": ["experimental\\.cell_space", "experimental import cell_space"],
+   "applies_to": "both",
+   "introduced": "3.0.0",
+   "deprecated": "3.2.0",
+   "removed": "3.4.0",
+   "replacement": "from mesa.discrete_space import ... (same class names) at targets >=3.2; at 3.0–3.1 the experimental import IS the current cell-space API.",
+   "note": "Verified: clean on 3.0/3.1, DeprecationWarning on 3.2/3.3, ModuleNotFoundError on 3.4+. current 3.0–3.1, legacy-with-warning 3.2–3.3, removed 3.4+."
+  },
+  {
+   "id": "continuous-space",
+   "kind": "api",
+   "patterns": ["ContinuousSpace"],
+   "applies_to": "both",
+   "introduced": null,
+   "removed": "4.0.0a0",
+   "judge": true,
+   "replacement": "KEEP legacy mesa.space.ContinuousSpace — the stable replacement doesn't exist through 3.5.1 (mesa.experimental.continuous_space is still experimental).",
+   "note": "Policy exception: legacy mesa.space.ContinuousSpace is the only STABLE continuous space through 3.5.x. Keep it, ensure no text calls it new/current, and report it as a pending Mesa-4 item. judge:true so it always surfaces in the report even though its computed status is current in 3.x. mesa.experimental.continuous_space exists only from 3.1.3. If ContinuousSpace is IMPORTED but never referenced (no space object constructed), it is dead code — prefer removing the import rather than keeping it."
+  },
+  {
+   "id": "old-space-imports",
+   "kind": "api",
+   "patterns": ["from mesa\\.space import", "mesa\\.space\\.", "\\bMultiGrid\\b", "\\bSingleGrid\\b", "\\bHexSingleGrid\\b", "\\bHexMultiGrid\\b", "\\bNetworkGrid\\b"],
+   "applies_to": "both",
+   "introduced": null,
+   "superseded": "3.2.0",
+   "removed": "4.0.0a0",
+   "replacement": "mesa.discrete_space: MultiGrid(w,h,torus) -> OrthogonalMooreGrid((w,h), torus=..., random=self.random); SingleGrid -> capacity=1; NetworkGrid(G) -> Network(G); full mapping in version-history.md §6.3",
+   "note": "Works silently through 3.5 — 'working is not updated'. LEGACY only from 3.2 (when discrete_space stabilized); at targets 3.0–3.1 mesa.space is the CURRENT stable grid API (discrete_space is experimental then) — KEEP it. Migrate to discrete_space at targets >=3.2. Agents must become CellAgent/FixedAgent. Exception: ContinuousSpace (separate entry)."
+  },
+  {
+   "id": "old-grid-methods",
+   "kind": "api",
+   "patterns": ["\\.place_agent\\(", "\\.move_agent\\(", "\\.move_to_empty\\(", "\\.position_agent\\(", "\\.get_cell_list_contents\\(", "\\.coord_iter\\(", "\\.iter_neighbors\\(", "\\.exists_empty_cells\\(", "\\.get_all_cell_contents\\("],
+   "applies_to": "both",
+   "introduced": null,
+   "superseded": "3.2.0",
+   "removed": "4.0.0a0",
+   "replacement": "place/move -> agent.cell = grid[(x,y)]; contents -> cell.agents; coord_iter -> for cell in grid.all_cells; move_to_empty -> agent.cell = grid.select_random_empty_cell(); get_all_cell_contents -> model.agents or grid.all_cells.agents",
+   "note": "Only meaningful alongside old mesa.space grids; with discrete_space these calls should no longer exist. Current at targets 3.0–3.1 (mesa.space era)."
+  },
+  {
+   "id": "grid-get-neighbor-calls",
+   "kind": "api",
+   "patterns": ["\\.get_neighborhood\\(", "\\.get_neighbors\\("],
+   "applies_to": "code",
+   "introduced": null,
+   "judge": true,
+   "replacement": "Old style: grid.get_neighborhood(pos, moore=..., include_center=...) -> cell.get_neighborhood(radius=..., include_center=...) or cell.neighborhood; grid.get_neighbors(pos,...) -> cell.neighborhood.agents",
+   "note": "cell.get_neighborhood(radius=...) on a discrete_space Cell is CURRENT. A pos/moore argument marks the legacy grid call. networkx G.neighbors is unrelated."
+  },
+  {
+   "id": "agent-pos",
+   "kind": "api",
+   "patterns": ["\\bself\\.pos\\b", "\\bagent\\.pos\\b", "\\.pos\\)", "\\.pos,", "\\.pos\\]"],
+   "applies_to": "code",
+   "introduced": null,
+   "superseded": "3.2.0",
+   "removed": "4.0.0a0",
+   "judge": true,
+   "replacement": "With discrete_space: agent.cell / agent.cell.coordinate. With legacy mesa.space grids .pos still works through 3.5.",
+   "note": "Judge non-mesa hits (attributes of other libraries). If the model moved to discrete_space, no .pos should remain. Current alongside mesa.space at targets 3.0–3.1."
+  },
+  {
+   "id": "steps-manual-increment",
+   "kind": "api",
+   "patterns": ["self\\.steps\\s*\\+=", "model\\.steps\\s*\\+=", "self\\._steps\\b", "self\\._advance_time"],
+   "applies_to": "code",
+   "introduced": null,
+   "removed": "3.0.0",
+   "replacement": "Delete — model.steps auto-increments at the start of every Model.step(); incrementing it yourself double-counts. model.time (3.4+) advances automatically too.",
+   "note": "Behavior change at 3.0."
+  },
+  {
+   "id": "reserved-name-assignment",
+   "kind": "api",
+   "patterns": ["self\\.agents\\s*=(?!=)", "model\\.agents\\s*=(?!=)", "self\\.(steps|time)\\s*=(?!=)"],
+   "applies_to": "code",
+   "applicable_min": "3.0.0",
+   "judge": true,
+   "replacement": "agents/steps/time (and random, running, rng) are reserved on Model in 3.0+. self.agents = ... raises AttributeError — rename the custom attribute. self.steps/self.time assignments shadow the built-in counters — remove or rename.",
+   "note": "Verified: self.agents = ... raises on 3.0+, warns on 2.3.4. applicable_min 3.0.0 — legitimate at a 2.x target. self.running = False is always legitimate (stops run loops)."
+  },
+  {
+   "id": "simulator-time",
+   "kind": "api",
+   "patterns": ["simulator\\.time"],
+   "applies_to": "code",
+   "introduced": "3.0.0",
+   "deprecated": "3.4.0",
+   "removed": "4.0.0a0",
+   "replacement": "model.time"
+  },
+  {
+   "id": "pip-install-mesa",
+   "kind": "install",
+   "patterns": ["(?i)pip install[^#\\n]*\\bmesa\\b"],
+   "applies_to": "code",
+   "replacement": "Repin to the target with the band-correct extras.",
+   "by_target": [
+    {"max": "3.0.0", "replacement": "%pip install mesa=={TARGET}  (no extras exist before 3.0; viz/network deps were core)"},
+    {"min": "3.0.0", "replacement": "%pip install -U \"mesa[rec]=={TARGET}\"  (rec = network+viz extras)"}
+   ],
+   "note": "Old pins hold the model back — repin to the target. Keep the cell commented if it was commented. Case-insensitive (Mesa/mesa are the same PyPI package). The scanner SUPPRESSES this finding when the line already pins the exact target with band-correct extras (mesa[rec]==TARGET for 3.0+, plain mesa==TARGET below 3.0) — a correct pin is resolved, not re-flagged. Bare `pip install mesa` gives a BROKEN install on 3.4+/3.5.x (import mesa fails: networkx missing) — verified: 3.2.0 bare-imports fine, 3.5.1 does not."
+  },
+  {
+   "id": "create-agents",
+   "kind": "api",
+   "patterns": ["\\.create_agents\\("],
+   "applies_to": "both",
+   "introduced": "3.1.0",
+   "replacement": "At targets <3.1 there is no create_agents — use an explicit loop: for i in range(n): AgentClass(model, ...)  (each agent auto-registers in 3.0+).",
+   "note": "Verified: AttributeError on 3.0.3, present from 3.1.5. Critical for 2.x->3.0 migrations: they must NOT introduce create_agents. applies_to:both so markdown/comments that DESCRIBE this API are flagged not-yet-introduced on a downgrade (prose staleness), and judge/suppressed at a target where it is current."
+  },
+  {
+   "id": "discrete-space-module",
+   "kind": "api",
+   "patterns": ["mesa\\.discrete_space"],
+   "applies_to": "both",
+   "introduced": "3.2.0",
+   "replacement": "At targets <3.2 the stable discrete_space module doesn't exist — use mesa.space grids (3.0–3.1) or, only if already experimental, mesa.experimental.cell_space (3.0–3.1).",
+   "note": "Verified: ModuleNotFoundError <3.2, present 3.2+. The stable module path."
+  },
+  {
+   "id": "cell-space-classes",
+   "kind": "api",
+   "patterns": ["\\b(OrthogonalMooreGrid|OrthogonalVonNeumannGrid|Grid2DMovingAgent|VoronoiGrid)\\b", "\\b(CellAgent|FixedAgent)\\b"],
+   "applies_to": "code",
+   "introduced": "3.0.0",
+   "judge": true,
+   "replacement": "Cell-space classes. Below 3.2 they exist only under mesa.experimental.cell_space; the stable mesa.discrete_space import is 3.2+.",
+   "by_target": [
+    {"min": "3.0.0", "max": "3.2.0", "note": "These classes exist only under mesa.experimental.cell_space at this target (stable discrete_space is 3.2+)."}
+   ],
+   "note": "Introduced experimentally in 3.0. HexGrid/Network omitted (ambiguous names). judge:true — confirm the import path matches the target. SEMANTIC CHECK: a discrete_space grid/Network constructed WITHOUT random=self.random emits a Mesa UserWarning 'Random number generator not specified, this can make models non-reproducible' at runtime — verify every OrthogonalMooreGrid/OrthogonalVonNeumannGrid/HexGrid/Network(...) passes random=self.random (regex can't see the absent kwarg across a multi-line ctor). MODERNIZATION (since 3.2): pick the base class by mobility — FixedAgent for agents that never move (patches/sites/terrain), CellAgent for movable agents, Grid2DMovingAgent for compass moves; don't default everything to CellAgent (a movable CellAgent 'works' for an immobile agent but isn't current-best — version-history §15b item 11)."
+  },
+  {
+   "id": "space-renderer",
+   "kind": "api",
+   "patterns": ["\\bSpaceRenderer\\b", "\\.draw_structure\\("],
+   "applies_to": "both",
+   "introduced": "3.3.0",
+   "replacement": "At targets <3.3 there is no SpaceRenderer — use make_space_component(agent_portrayal) inside SolaraViz components.",
+   "note": "Verified: import fails <3.3, present 3.3.0+. The setup_* chain is a SEPARATE 3.4+ API (space-renderer-setup-chain entry) — at 3.3 the current form is renderer.render(agent_portrayal)."
+  },
+  {
+   "id": "space-renderer-setup-chain",
+   "kind": "api",
+   "patterns": ["\\.setup_agents\\(", "\\.setup_propertylayer\\(", "\\.setup_structure\\("],
+   "applies_to": "both",
+   "introduced": "3.4.0",
+   "replacement": "At targets <3.4 SpaceRenderer has no setup_* methods — pass the portrayal to render(): SpaceRenderer(model, backend=...).render(agent_portrayal) (current at 3.3, deprecated from 3.4).",
+   "note": "Verified empirically: setup_agents/setup_structure absent on 3.3.0/3.3.1, present from 3.4.0. A 3.3-targeted migration that emits setup_agents() crashes at the target. applies_to:both so markdown/comments that DESCRIBE this API are flagged not-yet-introduced on a downgrade (prose staleness), and judge/suppressed at a target where it is current."
+  },
+  {
+   "id": "renderer-render-portrayal",
+   "kind": "api",
+   "patterns": ["\\.render\\(\\s*[A-Za-z_][A-Za-z0-9_]*portrayal", "\\.render\\(\\s*agent_portrayal", "\\.draw_agents\\(\\s*[A-Za-z_]"],
+   "applies_to": "code",
+   "introduced": "3.3.0",
+   "deprecated": "3.4.0",
+   "removed": "4.0.0a0",
+   "judge": true,
+   "replacement": "renderer.setup_agents(agent_portrayal) (3.4+ chain), then .render() / .draw_agents() without portrayal args.",
+   "note": "Passing portrayals to render()/draw_agents() is the CURRENT form at 3.3 and emits PendingDeprecationWarning from 3.4 (verified on 3.4.2/3.5.1). judge:true — .render(...) matches other libraries; confirm the receiver is a SpaceRenderer."
+  },
+  {
+   "id": "portrayal-style-classes",
+   "kind": "api",
+   "patterns": ["\\bAgentPortrayalStyle\\b", "\\bPropertyLayerStyle\\b"],
+   "applies_to": "both",
+   "introduced": "3.3.0",
+   "replacement": "At targets <3.3 these dataclasses don't exist — return a portrayal dict ({\"color\":..., \"marker\":..., \"size\":...} for 3.0–3.2; {\"Shape\":..., \"Color\":...} for 2.x).",
+   "note": "Verified: import fails <3.3, present 3.3.1+. From 3.3 the portrayal function should RETURN AgentPortrayalStyle; a plain-dict return runs but warns (DeprecationWarning) per agent — prefer AgentPortrayalStyle at every >=3.3 target."
+  },
+  {
+   "id": "agentset-to-list",
+   "kind": "api",
+   "patterns": ["\\.to_list\\(\\)"],
+   "applies_to": "both",
+   "introduced": "3.5.0",
+   "judge": true,
+   "replacement": "At targets <3.5 AgentSet has no to_list() — index/iterate directly (agents[i], list(agents)); indexing is current below 3.5.",
+   "note": "Verified: AttributeError <3.5, present 3.5. judge:true — pandas Series.to_list()/DataFrame false positives. applies_to:both so markdown/comments that DESCRIBE this API are flagged not-yet-introduced on a downgrade (prose staleness), and judge/suppressed at a target where it is current."
+  },
+  {
+   "id": "agent-from-dataframe",
+   "kind": "api",
+   "patterns": ["\\.from_dataframe\\("],
+   "applies_to": "both",
+   "introduced": "3.5.0",
+   "judge": true,
+   "replacement": "At targets <3.5 there is no Agent.from_dataframe — build agents with create_agents (3.1+) or an explicit loop.",
+   "note": "judge:true — geopandas/other from_dataframe false positives. applies_to:both so markdown/comments that DESCRIBE this API are flagged not-yet-introduced on a downgrade (prose staleness), and judge/suppressed at a target where it is current."
+  },
+  {
+   "id": "model-run-control",
+   "kind": "api",
+   "patterns": ["\\.run_for\\(", "\\.run_until\\(", "\\.schedule_event\\(", "\\.schedule_recurring\\("],
+   "applies_to": "both",
+   "introduced": "3.5.0",
+   "judge": true,
+   "replacement": "At targets <3.5 the Model has no run_for/run_until/schedule_event/schedule_recurring — use an explicit loop: for _ in range(n): model.step(). Event scheduling has no pre-3.5 equivalent (Simulator classes 3.0–3.4 for event-driven models).",
+   "note": "Verified: AttributeError <3.5, present 3.5. judge:true — simulator.run_for is the Simulator API (3.0-era); check the receiver. applies_to:both so markdown/comments that DESCRIBE this API are flagged not-yet-introduced on a downgrade (prose staleness), and judge/suppressed at a target where it is current."
+  },
+  {
+   "id": "model-rng",
+   "kind": "api",
+   "patterns": ["super\\(\\)\\s*\\.__init__\\([^)]*\\brng\\b", "def __init__\\(self[^)]*\\brng\\s*[=,)]", "\\b(self|model)\\.rng\\b"],
+   "applies_to": "code",
+   "introduced": "3.0.0",
+   "judge": true,
+   "replacement": "At targets <3.0 there is no self.rng (numpy Generator) — use self.random (stdlib) seeded via seed=.",
+   "note": "self.rng and the rng model kwarg are new in 3.0. Recommended-idiom (rng= end-to-end) is a 3.4/3.5 band item, not a scanner finding. judge:true — np.random.default_rng and other .rng attributes false-positive."
+  },
+  {
+   "id": "model-time-attr",
+   "kind": "api",
+   "patterns": ["\\b(self|model)\\.time\\b"],
+   "applies_to": "both",
+   "introduced": "3.4.0",
+   "judge": true,
+   "replacement": "At targets <3.4 the universal model.time clock doesn't exist — use model.steps (3.0+) or schedule.time (2.x).",
+   "note": "Verified: AttributeError <3.4, present 3.4.2+. judge:true — excludes mesa.time; datetime.time and other .time attributes false-positive. applies_to:both so markdown/comments that DESCRIBE this API are flagged not-yet-introduced on a downgrade (prose staleness), and judge/suppressed at a target where it is current."
+  },
+  {
+   "id": "agenttype-reporters",
+   "kind": "api",
+   "patterns": ["agenttype_reporters"],
+   "applies_to": "code",
+   "introduced": "2.4.0",
+   "replacement": "At targets <2.4 DataCollector has no agenttype_reporters — use per-type agent_reporters or separate collectors.",
+   "by_target": [
+    {"min": "2.4.0", "max": "3.4.1", "note": "agenttype_reporters is NOT supported inside batch_run before 3.4.1 — only in a model's own DataCollector."}
+   ],
+   "note": "Verified empirically: absent (TypeError) on 2.3.4, a real named DataCollector parameter (no **kwargs) and fully functional from 2.4.0; present 2.4.0+."
+  },
+  {
+   "id": "agentset-groupby-agg",
+   "kind": "api",
+   "patterns": ["\\bagents\\.groupby\\(", "\\bagents\\.agg\\(", "\\.agents\\.groupby\\(", "\\.agents\\.agg\\("],
+   "applies_to": "code",
+   "introduced": "2.4.0",
+   "judge": true,
+   "replacement": "At targets <2.4 AgentSet.groupby/agg don't exist — use manual loops. (agg with multiple functions is 3.2+.)",
+   "note": "Verified empirically: absent 2.2.4 & 2.3.4, present from 2.4.0 (the AgentSet groupby/agg/shuffle_do surface and agents_by_type land in 2.4.0). judge:true — pandas groupby/agg false-positive heavily; require the agents. prefix."
+  },
+  {
+   "id": "stale-term-scheduler",
+   "kind": "prose",
+   "patterns": ["\\bschedulers?\\b", "\\bactivation regime\\b"],
+   "applies_to": "markdown",
+   "introduced": null,
+   "deprecated": "3.0.0",
+   "removed": "3.1.0",
+   "replacement": "Text must describe the AgentSet mechanism (model.agents.shuffle_do(\"step\") etc.), not a scheduler object.",
+   "note": "At a 2.x target scheduler prose is CORRECT (suppressed below 3.0). In 3.5+ 'schedule_event/schedule_recurring' prose about the EVENT system is current — judge those. non-English text may use 'scheduler' as a loanword — same rule."
+  },
+  {
+   "id": "stale-term-unique-id",
+   "kind": "prose",
+   "patterns": ["unique_id"],
+   "applies_to": "markdown",
+   "applicable_min": "3.0.0",
+   "judge": true,
+   "replacement": "Text may mention unique_id as an auto-assigned attribute (current), but must not instruct passing it to the Agent constructor.",
+   "note": "Judge: reading unique_id is fine; teaching the reader to pass it is stale from 3.0. At a 2.x target passing unique_id is correct (suppressed below 3.0)."
+  },
+  {
+   "id": "stale-version-claim",
+   "kind": "prose",
+   "patterns": ["[Mm]esa version \\d+\\.\\d+", "[Mm]esa v\\d+\\.\\d+", "compatible with [Mm]esa \\d", "[Mm]esa\\s+v?\\d+\\.\\d+"],
+   "applies_to": "both",
+   "judge": true,
+   "replacement": "The claim must state the target version exactly (e.g. 'mesa version {TARGET}').",
+   "note": "Version banners in comments/markdown go stale silently — verify the stated version equals the migration target. Also catches bare 'Mesa 3.5' / '(Mesa v3.5)' banners (judge)."
+  },
+  {
+   "id": "agent-vars-without-reporters",
+   "kind": "api",
+   "patterns": ["get_agent_vars_dataframe"],
+   "applies_to": "code",
+   "introduced": null,
+   "judge": true,
+   "replacement": "Only call when the DataCollector defines agent_reporters; otherwise remove the call.",
+   "note": "Behavior delta: since Mesa 3.x this RAISES UserWarning when no agent_reporters are defined (2.x returned an empty DataFrame silently). Verified empirically on 3.5.1."
+  }
+ ]
+}
