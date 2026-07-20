@@ -1,0 +1,49 @@
+{
+ "fixture": "money_mesa2_classic",
+ "era": "2.x",
+ "runs_on": "2.4.0",
+ "python_pin": "3.11",
+ "protected_cells": [],
+ "planted_findings": [
+  {
+   "api_id": "scheduler-classes",
+   "where": "code+markdown",
+   "note": "RandomActivation"
+  },
+  {
+   "api_id": "mesa-time-scheduler-import",
+   "where": "code",
+   "note": "from mesa.time import RandomActivation"
+  },
+  {
+   "api_id": "agent-unique-id-init",
+   "where": "code",
+   "note": "def __init__(self, unique_id, model): super().__init__(unique_id, model)"
+  },
+  {
+   "api_id": "schedule-attribute",
+   "where": "code",
+   "note": "self.schedule = RandomActivation(self); self.schedule.add/step; model.schedule.steps"
+  },
+  {
+   "api_id": "batch-run-iterations",
+   "where": "code",
+   "note": "CURRENT at targets <=3.3, deprecated 3.4+"
+  },
+  {
+   "api_id": "stale-term-scheduler",
+   "where": "markdown",
+   "note": "'the RandomActivation scheduler which activates agents in random order'"
+  },
+  {
+   "api_id": "pip-install-mesa",
+   "where": "code",
+   "note": "#!pip install mesa==2.1.5"
+  },
+  {
+   "api_id": "run-loop",
+   "where": "code",
+   "note": "for _ in range(20): model.step(); modernize to model.run_for at target 3.5+"
+  }
+ ]
+}

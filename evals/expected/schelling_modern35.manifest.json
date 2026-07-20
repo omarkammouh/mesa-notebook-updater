@@ -1,0 +1,123 @@
+{
+  "fixture": "schelling_modern35.ipynb",
+  "era": "3.5",
+  "runs_on": "3.5.1",
+  "python_pin": "3.12",
+  "protected_cells": [],
+  "planted_findings": [
+    {
+      "api_id": "pip-install-mesa",
+      "where": "code",
+      "note": "cell f6-code-pip: commented pin 'mesa[rec]==3.5.1'."
+    },
+    {
+      "api_id": "model-run-control",
+      "where": "markdown",
+      "note": "cell f6-md-intro: prose EXPLAINS model.run_for(n) (introduced 3.5). This explanation goes stale on any downgrade below 3.5 and must be rewritten to describe an explicit step loop."
+    },
+    {
+      "api_id": "discrete-space-module",
+      "where": "code",
+      "note": "cell f6-code-imports: 'from mesa.discrete_space import ...' (stable since 3.2)."
+    },
+    {
+      "api_id": "cell-space-classes",
+      "where": "code",
+      "note": "cells f6-code-imports/agent/model: CellAgent, OrthogonalMooreGrid under mesa.discrete_space."
+    },
+    {
+      "api_id": "model-rng",
+      "where": "code",
+      "note": "cells f6-code-model/run/batch: rng= as the Model constructor kwarg (super().__init__(rng=rng)) and Schelling(rng=42). The rng model kwarg is supported since 3.0, current-best from 3.4."
+    },
+    {
+      "api_id": "create-agents",
+      "where": "code",
+      "note": "cell f6-code-model: Household.create_agents(self, n, cell=[...], kind=[...]) with broadcast kwargs (since 3.1)."
+    },
+    {
+      "api_id": "agentset-to-list",
+      "where": "code",
+      "note": "cell f6-code-model: self.agents.to_list()[0] (introduced 3.5)."
+    },
+    {
+      "api_id": "model-time-attr",
+      "where": "code",
+      "note": "cells f6-code-model & f6-code-run: self.time / model.time (introduced 3.4)."
+    },
+    {
+      "api_id": "model-run-control",
+      "where": "code",
+      "note": "cell f6-code-run: model.run_for(20) (introduced 3.5)."
+    },
+    {
+      "api_id": "batch-run-rng",
+      "where": "code",
+      "note": "cell f6-code-batch: mesa.batch_run(..., rng=[1,2,3]) (introduced 3.4)."
+    },
+    {
+      "api_id": "space-renderer",
+      "where": "code",
+      "note": "cell f6-code-viz: SpaceRenderer(...).setup_agents(agent_portrayal) - the setup_* chain is the 3.5 idiom (class introduced 3.3; setup_agents method added 3.4/3.5)."
+    },
+    {
+      "api_id": "portrayal-style-classes",
+      "where": "code",
+      "note": "cell f6-code-viz: AgentPortrayalStyle (introduced 3.3)."
+    },
+    {
+      "api_id": "make-plot-component",
+      "where": "code",
+      "note": "cell f6-code-viz: imported (current since 3.0); judge item."
+    }
+  ],
+  "downgrade_to_3.3.0": {
+    "remove_or_rewrite": [
+      {
+        "api_id": "model-run-control",
+        "where": "code",
+        "action": "model.run_for(20) -> for _ in range(20): model.step() (run_for not-yet-introduced until 3.5)."
+      },
+      {
+        "api_id": "model-run-control",
+        "where": "markdown",
+        "action": "cell f6-md-intro: rewrite the run_for prose to describe an explicit 'for _ in range(n): model.step()' loop (the stale-prose case)."
+      },
+      {
+        "api_id": "agentset-to-list",
+        "where": "code",
+        "action": "self.agents.to_list()[0] -> self.agents[0] (to_list not-yet-introduced until 3.5; direct indexing is current below 3.5)."
+      },
+      {
+        "api_id": "batch-run-rng",
+        "where": "code",
+        "action": "mesa.batch_run(..., rng=[1,2,3]) -> iterations=3 (batch_run rng= not-yet-introduced until 3.4; a fixed model seed gives n replications)."
+      },
+      {
+        "api_id": "model-time-attr",
+        "where": "code",
+        "action": "self.time / model.time -> self.steps / model.steps (model.time not-yet-introduced until 3.4)."
+      },
+      {
+        "api_id": "space-renderer-setup-chain",
+        "where": "code",
+        "action": "SpaceRenderer(...).setup_agents(agent_portrayal) -> SpaceRenderer(...).render(agent_portrayal) (the setup_* chain is 3.4+; the SpaceRenderer class itself stays — it exists at 3.3)."
+      },
+      {
+        "api_id": "model-time-attr",
+        "where": "markdown",
+        "action": "cell f6-md-intro: rewrite prose mentioning the model.time clock to model.steps (model.time not-yet-introduced until 3.4)."
+      }
+    ],
+    "stays": [
+      "discrete-space-module",
+      "cell-space-classes",
+      "create-agents",
+      "portrayal-style-classes",
+      "model-rng",
+      "space-renderer"
+    ],
+    "note": "discrete_space, create_agents, AgentPortrayalStyle and the SpaceRenderer CLASS are already current at 3.3.0, so they stay. Caveat: the SpaceRenderer .setup_agents() chain (3.4/3.5) must become .render(agent_portrayal) at 3.3.0 (the method itself is not-yet-introduced), even though the class stays. model-rng (rng= constructor kwarg) is supported since 3.0 and stays; only batch_run's rng= (batch-run-rng, 3.4+) changes to iterations=. (Answer key now lists space-renderer-setup-chain and the markdown model-time-attr, both of which the target-conditioned scanner flags not-yet-introduced at 3.3.0.)"
+  },
+  "notes": "Executes cleanly and warning-free on Mesa 3.5.1 (empirically verified): rng= is used end to end so there is no seed= FutureWarning, and self.agents.to_list()[0] is used instead of deprecated AgentSet indexing. This is the DOWNGRADE SOURCE fixture. numpy is genuinely used in the share_happy reporter. batch_run prints a tqdm progress bar to stderr (a stream, not a warning). Viz cell ends with a 'page = SolaraViz(...)' assignment."
+}

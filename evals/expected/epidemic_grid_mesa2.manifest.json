@@ -1,0 +1,74 @@
+{
+ "fixture": "epidemic_grid_mesa2",
+ "era": "2.x",
+ "runs_on": "2.4.0",
+ "python_pin": "3.11",
+ "protected_cells": [],
+ "planted_findings": [
+  {
+   "api_id": "pip-install-mesa",
+   "where": "code",
+   "note": "#!pip install mesa==2.2.0"
+  },
+  {
+   "api_id": "scheduler-classes",
+   "where": "code",
+   "note": "RandomActivationByType"
+  },
+  {
+   "api_id": "mesa-time-scheduler-import",
+   "where": "code",
+   "note": "from mesa.time import RandomActivationByType"
+  },
+  {
+   "api_id": "old-space-imports",
+   "where": "code",
+   "note": "from mesa.space import MultiGrid"
+  },
+  {
+   "api_id": "agent-unique-id-init",
+   "where": "code",
+   "note": "Person.__init__(self, unique_id, model, state) + super().__init__(unique_id, model)"
+  },
+  {
+   "api_id": "next-id",
+   "where": "code",
+   "note": "self.next_id()"
+  },
+  {
+   "api_id": "schedule-attribute",
+   "where": "code",
+   "note": "self.schedule = RandomActivationByType(self); self.schedule.add/step"
+  },
+  {
+   "api_id": "agent-pos",
+   "where": "code",
+   "note": "self.pos read in move() and step()"
+  },
+  {
+   "api_id": "old-grid-methods",
+   "where": "code",
+   "note": "get_neighborhood, move_agent, get_cell_list_contents, place_agent, coord_iter"
+  },
+  {
+   "api_id": "old-visualization",
+   "where": "code",
+   "note": "mesa.visualization.modules CanvasGrid/ChartModule + ModularVisualization.ModularServer"
+  },
+  {
+   "api_id": "portrayal-dict-2x-keys",
+   "where": "code",
+   "note": "Shape/Filled/Layer/Color/r portrayal dict"
+  },
+  {
+   "api_id": "manual-agent-creation",
+   "where": "code",
+   "note": "loop creating Person, schedule.add, grid.place_agent; modernization band"
+  },
+  {
+   "api_id": "run-loop",
+   "where": "code",
+   "note": "for _ in range(10): model.step(); modernize to model.run_for at target 3.5+"
+  }
+ ]
+}

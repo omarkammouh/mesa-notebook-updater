@@ -1,0 +1,33 @@
+{
+ "fixture": "exam_mixed_nl.ipynb",
+ "era": "mixed",
+ "runs_on": null,
+ "python_pin": "3.12",
+ "pre_migration_executes": false,
+ "protected_cells": [
+  1
+ ],
+ "planted_findings": [
+  {
+   "api_id": "mesa-time-scheduler-import",
+   "where": "code",
+   "note": "Cell 4 (Q2 legacy half): `from mesa.time import RandomActivation`. Removed — ImportError on 3.5 (name reused for events)."
+  },
+  {
+   "api_id": "scheduler-classes",
+   "where": "code",
+   "note": "Cell 4: RandomActivation(self). Deprecated 3.0, removed 3.1 — migrate to AgentSet.shuffle_do."
+  },
+  {
+   "api_id": "schedule-attribute",
+   "where": "code",
+   "note": "Cell 4: self.schedule = ..., self.schedule.add(...), self.schedule.step(). Removed 3.0 — no self.schedule in 3.x."
+  },
+  {
+   "api_id": "model-seed-kwarg",
+   "where": "code",
+   "note": "Cell 4: def __init__(self, seed=None) + super().__init__(seed=seed). Deprecated 3.5 (FutureWarning) — migrate seed= -> rng=."
+  }
+ ],
+ "notes": "Half-migrated bilingual (NL/EN) teaching exam. The modern half (cell 2: super().__init__(rng=rng), agents.shuffle_do) conflicts with the legacy half (cell 4: RandomActivation/self.schedule/seed=), so the scanner reports Era: MIXED (era_lower 3.0.0 from model-rng >= era_upper 3.0.0 from the removed scheduler/schedule idioms). Does NOT execute pre-migration on 3.5.1 (RandomActivation ImportError) — runs_on null, pre_migration_executes false, do not run it; validate JSON + scan instead. protected_cells[0] = index 1, the Dutch student-answer cell (no mesa API terms): it MUST stay byte-identical through any migration. Migrate only the legacy half; keep the modern half."
+}

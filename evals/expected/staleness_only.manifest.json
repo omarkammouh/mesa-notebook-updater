@@ -1,0 +1,31 @@
+{
+ "fixture": "staleness_only.ipynb",
+ "era": "3.5-current",
+ "runs_on": "3.5.1",
+ "python_pin": "3.12",
+ "pre_migration_executes": true,
+ "protected_cells": [],
+ "planted_findings": [
+  {
+   "api_id": "stale-term-scheduler",
+   "where": "markdown",
+   "note": "Cell 0 Theory: 'the RandomActivation scheduler activates agents in random order'. Schedulers were removed in 3.1 — rewrite to the AgentSet mechanism (agents.shuffle_do). (scheduler-classes also fires on the literal 'RandomActivation' in this markdown, but the fix is still text-only.)"
+  },
+  {
+   "api_id": "stale-term-unique-id",
+   "where": "markdown",
+   "note": "Cell 0 Theory: 'a unique_id that you pass to the constructor'. unique_id is auto-assigned since 3.0 — text must not instruct passing it to the constructor."
+  },
+  {
+   "api_id": "stale-term-scheduler",
+   "where": "markdown",
+   "note": "Cell 5: 'We used the scheduler's step() method to advance the model'. Stale — the model advances via model.run_for / AgentSet.shuffle_do, there is no scheduler."
+  },
+  {
+   "api_id": "stale-term-scheduler",
+   "where": "code",
+   "note": "Cell 3, comment above shuffle_do: '# activate all agents via the scheduler'. Stale COMMENT. SEMANTIC finding: NOT regex-caught (stale-term-scheduler is markdown-only and the generic word 'scheduler' is not a class name), so a migration must catch it by reading the comment."
+  }
+ ],
+ "notes": "Code is fully modern 3.5 and runs exit 0 with ZERO warnings. A migration must make ONLY text edits (zero code changes). Planted staleness is markdown (x3) plus one stale code comment. The scanner will additionally surface JUDGE rows on the modern code (model-rng from rng=, cell-space-classes for OrthogonalMooreGrid/CellAgent) and evidence rows (create-agents, discrete-space-module) — all of these are confirm-current, NOT staleness and NOT work."
+}

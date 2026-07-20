@@ -1,0 +1,135 @@
+{
+ "skill_name": "mesa-notebook-updater",
+ "$comment": "Every input fixture executes green on its own era's Mesa (see evals/expected/<name>.manifest.json for the planted findings — the grading answer key; never show it to the agent under eval). All evals were validated end-to-end in the 2026-07 stress test: each ran as a real migration by an agent following the skill, then passed machine gates (scanner-clean at target, no anachronisms, structure, protected cells, manifest coverage, pinned execution with zero warnings) and an adversarial reader review.",
+ "evals": [
+  {
+   "id": 0,
+   "name": "verify-hand-migration-mixed-exam",
+   "prompt": "This is one of our exam notebooks (Dutch/English mixed). A colleague half-migrated it by hand to mesa 3.5 but I'm not confident they finished — check it against the latest mesa release and complete whatever is still old, including comments and explanations. Update in place: {INPUT_DIR}/exam_mixed_nl.ipynb",
+   "expected_output": "Scanner reports a MIXED-era conflict; the legacy half (RandomActivation import, self.schedule, seed=) is migrated; the already-modern half is untouched; all Dutch text byte-identical; executes cleanly on 3.5.1.",
+   "files": ["inputs/exam_mixed_nl.ipynb"],
+   "assertions": [
+    "Notebook executes cleanly on Mesa 3.5.1 (bundled runner exits 0 on a copy) with zero mesa warnings",
+    "Scanner at --target 3.5.1: zero findings with status removed/deprecated/install/stale-term/not-yet-introduced",
+    "The Dutch student-answer markdown cell (starts '**Antwoord:**') is byte-identical to the input; all markdown cells unchanged",
+    "The already-modern code cell (rng=, shuffle_do) is unchanged; only the legacy cell was migrated",
+    "Exam structure intact: same cell count and order, question headings preserved"
+   ]
+  },
+  {
+   "id": 1,
+   "name": "stale-pins-and-batchrun-traffic",
+   "prompt": "this traffic notebook should run on the newest mesa — it still has a '#!pip install mesa[rec]==3.3.0' cell and i think some parts still use older mesa APIs. make sure it actually runs on the latest mesa and tidy that up. update in place: {INPUT_DIR}/traffic_33.ipynb",
+   "expected_output": "pip pin repinned to the current target; iterations= -> rng=[...]; seed= -> rng= end-to-end; renderer.render(portrayal) -> setup_agents chain; discrete_space/SpaceRenderer/AgentPortrayalStyle kept; executes cleanly.",
+   "files": ["inputs/traffic_33.ipynb"],
+   "assertions": [
+    "Notebook executes cleanly on the latest Mesa (runner exit 0, zero mesa warnings)",
+    "pip install cell pins the current target with [rec] extras (any case of 'mesa')",
+    "batch_run uses rng=[...] (no iterations=); models accept/forward rng",
+    "No seed= model kwarg remains (scanner: 0 model-seed-kwarg findings)",
+    "SpaceRenderer uses the setup_agents(...) chain, not render(portrayal)",
+    "discrete_space, create_agents, AgentPortrayalStyle kept (already current)"
+   ]
+  },
+  {
+   "id": 2,
+   "name": "full-migration-mesa2-epidemic",
+   "prompt": "Here is one of our original exercise notebooks still written for mesa 2.x (RandomActivationByType scheduler, unique_id in Agent init, MultiGrid, the old CanvasGrid/ModularServer visualization). Migrate it to the current mesa release so we can reuse it — code AND the explanation text between the cells. Update in place: {INPUT_DIR}/epidemic_grid_mesa2.ipynb",
+   "expected_output": "All Mesa 2.x APIs migrated (scheduler->agents_by_type shuffle_do, no unique_id/next_id, MultiGrid->discrete_space cell-centric, viz->SolaraViz+SpaceRenderer+AgentPortrayalStyle, rng= seeding); markdown teaches the new API; executes cleanly on latest Mesa.",
+   "files": ["inputs/epidemic_grid_mesa2.ipynb"],
+   "assertions": [
+    "Notebook executes cleanly on the latest Mesa (runner exit 0, zero warnings)",
+    "Zero scanner findings with status removed, deprecated, install, legacy, or not-yet-introduced at the latest target",
+    "Grid is mesa.discrete_space (OrthogonalMooreGrid/CellAgent, cell-centric movement); no place_agent/move_agent/coord_iter/agent.pos",
+    "Activation preserved per type: agents_by_type[...].shuffle_do(\"step\")",
+    "Visualization rewritten to SolaraViz + SpaceRenderer.setup_agents + AgentPortrayalStyle; no ModularServer/CanvasGrid/Shape-dict remains; a viz line the author had commented off stays off",
+    "Cell count and order unchanged; no migration residue in any text"
+   ]
+  },
+  {
+   "id": 3,
+   "name": "boids-continuous-keep-rule",
+   "prompt": "Migrate this mesa 2.x Boids flocking exam notebook to the current mesa release. Update in place: {INPUT_DIR}/boids_continuous.ipynb",
+   "expected_output": "Everything migrates (schedulers->AgentSet, auto unique_id, rng=) EXCEPT mesa.space.ContinuousSpace and its API, which are KEPT (stable replacement doesn't exist) and reported as a pending Mesa-4 item.",
+   "files": ["inputs/boids_continuous.ipynb"],
+   "assertions": [
+    "Notebook executes cleanly on the latest Mesa (runner exit 0, zero warnings — incl. no ContinuousSpace place_agent double-position UserWarning)",
+    "mesa.space.ContinuousSpace KEPT with .pos/place_agent/move_agent/get_neighbors (the keep rule); scanner shows these only as judge findings",
+    "RandomActivation/schedule/next_id/unique_id-init all gone (AgentSet + auto ids)",
+    "Seeding is rng= end-to-end; unseeded global np.random draws moved onto the model RNG",
+    "The report names ContinuousSpace as kept + why + pending Mesa-4 item"
+   ]
+  },
+  {
+   "id": 4,
+   "name": "migrate-to-mid-target-330",
+   "prompt": "Our course environment is pinned to mesa 3.3.0 — migrate this old exam notebook to exactly that version, not the latest. Update in place: {INPUT_DIR}/money_mesa2_classic.ipynb",
+   "expected_output": "2.x APIs migrated to the 3.3 band exactly: schedulers->AgentSet, no unique_id, create_agents (3.1+ ok); iterations= and seed= KEPT (current at 3.3); nothing from 3.4/3.5 introduced.",
+   "files": ["inputs/money_mesa2_classic.ipynb"],
+   "assertions": [
+    "Notebook executes cleanly pinned to mesa[rec]==3.3.0 (runner exit 0, zero warnings)",
+    "Scanner at --target 3.3.0: zero removed/deprecated/install/not-yet-introduced findings",
+    "ANACHRONISM CHECK: no run_for/run_until/to_list()/from_dataframe/schedule_event anywhere; no rng= in batch_run; no rng= model kwarg",
+    "batch_run(iterations=...) present (current at 3.3); model seeding uses seed=",
+    "pip cell pins mesa[rec]==3.3.0",
+    "The report lists the deliberately-not-applied newer rungs (3.4 iterations->rng; 3.5 seed->rng, run_for, to_list)"
+   ]
+  },
+  {
+   "id": 5,
+   "name": "downgrade-35-to-330",
+   "prompt": "Our lab machines are pinned to mesa 3.3.0 and cannot be upgraded. This notebook was written for mesa 3.5 — make it run on the lab machines. Update in place: {INPUT_DIR}/schelling_modern35.ipynb",
+   "expected_output": "Downgrade: run_for -> explicit step loop (and the prose explaining run_for rewritten), to_list -> indexing, batch rng= -> iterations=, rng= -> seed=, setup_agents chain -> render(portrayal) (3.3 has no setup_*); discrete_space/create_agents/SpaceRenderer/AgentPortrayalStyle kept; honest RNG caveat in the report.",
+   "files": ["inputs/schelling_modern35.ipynb"],
+   "assertions": [
+    "Notebook executes cleanly pinned to mesa[rec]==3.3.0 (runner exit 0; zero mesa warnings)",
+    "Scanner at --target 3.3.0: zero not-yet-introduced findings remain",
+    "No run_for/run_until/to_list()/model.time/batch_run(rng=)/setup_agents anywhere in code OR markdown",
+    "Explicit step loop and batch_run(iterations=...) restored; model uses seed=",
+    "SpaceRenderer kept but via render(agent_portrayal) — the 3.3 form",
+    "Report contains downgrade caveats: seed= does not reproduce rng= trajectories; iterations= replications are unseeded"
+   ]
+  },
+  {
+   "id": 6,
+   "name": "green-but-dead-modernization",
+   "prompt": "This notebook runs fine on the latest mesa but I think it's written in an outdated style — bring it fully up to date. Update in place: {INPUT_DIR}/green_but_dead.ipynb",
+   "expected_output": "Despite running green, the notebook is modernized: legacy mesa.space grid -> discrete_space cell-centric, manual loops -> create_agents/shuffle_do/run_for, seed= -> rng=. A green run must not end the job.",
+   "files": ["inputs/green_but_dead.ipynb"],
+   "assertions": [
+    "The migration happened at all (the working-is-not-updated trap): legacy MultiGrid/.pos/place_agent/get_neighborhood are gone, replaced by discrete_space CellAgent idioms",
+    "Manual creation loop -> create_agents; manual step fan-out -> shuffle_do; manual run loop -> run_for; seed= -> rng=",
+    "Notebook executes cleanly on the latest Mesa with zero warnings (the seed= FutureWarning is gone)",
+    "Markdown cells without API references are byte-identical (minimal delta)",
+    "Report discloses the RNG draw-order shift honestly"
+   ]
+  },
+  {
+   "id": 7,
+   "name": "staleness-only-text-contract",
+   "prompt": "Check this notebook against the latest mesa — I think the code is fine but some of the explanations may describe old Mesa behavior. Update in place: {INPUT_DIR}/staleness_only.ipynb",
+   "expected_output": "Text-only edits: the scheduler/unique_id prose and one stale code comment are rewritten to current behavior; zero code-semantics changes.",
+   "files": ["inputs/staleness_only.ipynb"],
+   "assertions": [
+    "All code cells byte-identical to the input except at most one comment line",
+    "No markdown sentence describes schedulers or passing unique_id as current behavior; the semantic staleness with no API name (e.g. 'the scheduler's step() method') is also fixed",
+    "Notebook executes cleanly on the latest Mesa with zero warnings",
+    "No migration residue; author's voice and sentence count (±1) preserved"
+   ]
+  },
+  {
+   "id": 8,
+   "name": "version-catalog-qa",
+   "prompt": "Before I pick a target for my course notebooks: what changed in mesa 3.1.3? Which Python do I need for mesa 2.3.4 vs 3.4.0? And can I pin my lab to mesa 0.7.8 or 2.0.0?",
+   "expected_output": "Answers grounded in references/version-catalog.json + version-history.md, no migration performed.",
+   "files": [],
+   "assertions": [
+    "3.1.3 answer mentions the experimental n-dimensional ContinuousSpace rewrite and/or the seed/rng consistent-seeding fix",
+    "Python answer: mesa 2.3.4 declares requires_python >=3.9 (skill pins 3.11 for arm64 build reality); mesa 3.4.0 requires >=3.12",
+    "0.7.8 identified as existing on PyPI but having NO files (uninstallable)",
+    "2.0.0 identified as a changelog-only ghost never uploaded to PyPI; nearest installable 2.1",
+    "No files are modified"
+   ]
+  }
+ ]
+}

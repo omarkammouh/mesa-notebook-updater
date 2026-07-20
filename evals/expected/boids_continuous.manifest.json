@@ -1,0 +1,66 @@
+{
+ "fixture": "boids_continuous.ipynb",
+ "era": "2.x",
+ "runs_on": "2.4.0",
+ "python_pin": "3.11",
+ "pre_migration_executes": true,
+ "protected_cells": [],
+ "planted_findings": [
+  {
+   "api_id": "pip-install-mesa",
+   "where": "code",
+   "note": "Cell 1: commented `#!pip install mesa==2.3.4`. Repin to the target (kept commented)."
+  },
+  {
+   "api_id": "mesa-time-scheduler-import",
+   "where": "code",
+   "note": "Cell 2: `from mesa.time import RandomActivation`. Removed on 3.x — drop the scheduler import."
+  },
+  {
+   "api_id": "old-space-imports",
+   "where": "code",
+   "note": "Cell 2: `from mesa.space import ContinuousSpace` matches old-space-imports, BUT ContinuousSpace is the KEEP exception (see continuous-space). Do not rewrite this import to discrete_space."
+  },
+  {
+   "api_id": "continuous-space",
+   "where": "code",
+   "note": "KEEP — report as pending Mesa-4 item. mesa.space.ContinuousSpace (cell 2 import; ContinuousSpace(...) in cell 4; space.get_neighbors/place_agent/move_agent) is the ONLY stable continuous space through 3.5.x — the experimental replacement is not stable. Keep it and ensure no prose calls it new/current."
+  },
+  {
+   "api_id": "agent-unique-id-init",
+   "where": "code",
+   "note": "Cell 3: def __init__(self, unique_id, model, ...) + super().__init__(unique_id, model). Removed 3.0 — drop unique_id (auto-assigned); fix the Boid(self.next_id(), self, ...) call site in cell 4."
+  },
+  {
+   "api_id": "next-id",
+   "where": "code",
+   "note": "Cell 4: self.next_id(). Removed 3.0 — delete; unique_id is auto-assigned."
+  },
+  {
+   "api_id": "scheduler-classes",
+   "where": "code",
+   "note": "Cell 4: RandomActivation(self). Removed 3.1 — replace with model.agents.shuffle_do('step')."
+  },
+  {
+   "api_id": "schedule-attribute",
+   "where": "code",
+   "note": "Cell 4: self.schedule = ..., self.schedule.add(...), self.schedule.step(); cell 5 model.schedule.steps/.agents. Removed 3.0."
+  },
+  {
+   "api_id": "model-seed-kwarg",
+   "where": "code",
+   "note": "Cell 4: def __init__(..., seed=None) + super().__init__(seed=seed). Deprecated 3.5 — migrate seed= -> rng=."
+  },
+  {
+   "api_id": "old-grid-methods",
+   "where": "code",
+   "note": "space.place_agent (cell 4) and space.move_agent (cell 3). These are ContinuousSpace methods — they stay under the KEEP rule (do NOT convert to agent.cell = ...); flagged because the pattern is grid-shared."
+  },
+  {
+   "api_id": "agent-pos",
+   "where": "code",
+   "note": "Cell 3: self.pos = np.array(pos) and reads. Scanner status: legacy (superseded 3.2), but under the KEPT ContinuousSpace .pos remains the valid position attribute — KEEP it (do not convert to agent.cell)."
+  }
+ ],
+ "notes": "Mesa 2.x Boids on ContinuousSpace — THE KEEP-RULE fixture. Executes exit 0 on mesa 2.4.0 @ python 3.11 (fall back to 3.10 if the numpy build fails; python_pin records the version used). Migrating to 3.5.1 must KEEP mesa.space.ContinuousSpace and its methods (get_neighbors/place_agent/move_agent) while migrating everything else: scheduler -> AgentSet, unique_id/next_id -> auto id, seed= -> rng=. old-space-imports and old-grid-methods also match the ContinuousSpace import/methods; the continuous-space entry is the governing exception (KEEP, report as pending Mesa-4 item). Execution emits 20 benign UserWarnings from mesa 2.4 ContinuousSpace.place_agent ('Agent N is being placed ... despite already having the position') because the spec sets self.pos in Boid.__init__ (planted agent-pos) before the required place_agent call — expected 2.x runtime chatter, does not affect exit 0, and irrelevant to the target-3.5.1 scan."
+}

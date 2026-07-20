@@ -1,0 +1,36 @@
+{
+ "fixture": "green_but_dead.ipynb",
+ "era": "3.x-legacy-dialect",
+ "runs_on": "3.5.1",
+ "python_pin": "3.12",
+ "pre_migration_executes": true,
+ "protected_cells": [],
+ "planted_findings": [
+  {
+   "api_id": "old-space-imports",
+   "where": "code",
+   "note": "Cell 1: `from mesa.space import MultiGrid` + MultiGrid(...) in cell 3. LEGACY — silent on 3.5 (superseded by mesa.discrete_space in 3.2); migrate to OrthogonalMooreGrid."
+  },
+  {
+   "api_id": "old-grid-methods",
+   "where": "code",
+   "note": "grid.move_agent (cell 2) and grid.place_agent (cell 3). LEGACY — silent on 3.5; with discrete_space these become agent.cell = grid[...]."
+  },
+  {
+   "api_id": "grid-get-neighbor-calls",
+   "where": "code",
+   "note": "Cell 2: grid.get_neighborhood(self.pos, moore=True, include_center=False). Legacy pos/moore grid call (judge); becomes cell.neighborhood."
+  },
+  {
+   "api_id": "agent-pos",
+   "where": "code",
+   "note": "Cell 2: self.pos. Legacy mesa.space attribute, silent on 3.5 (scanner status: legacy, superseded 3.2); becomes agent.cell.coordinate under discrete_space."
+  },
+  {
+   "api_id": "model-seed-kwarg",
+   "where": "code",
+   "note": "Cell 3: def __init__(..., seed=None) + super().__init__(seed=seed), and Pasture(seed=1) in cell 4. DEPRECATED on 3.5.1 — this is the ONLY non-silent finding: it emits a FutureWarning. Migrate seed= -> rng=."
+  }
+ ],
+ "notes": "The 'working is not updated' trap. EXECUTES green on 3.5.1 (exit 0) yet is written entirely in the dead mesa.space dialect, so a green run proves nothing — the scanner must still find work. Every finding is LEGACY and silent on 3.5 EXCEPT model-seed-kwarg, which emits the one allowed warning (FutureWarning for seed=). Agents are stepped via a manual `for a in list(self.agents)` loop (no scheduler class), and created in a manual loop (no create_agents)."
+}

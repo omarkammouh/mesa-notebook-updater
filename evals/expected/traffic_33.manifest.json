@@ -1,0 +1,102 @@
+{
+  "fixture": "traffic_33.ipynb",
+  "era": "3.3",
+  "runs_on": "3.3.1",
+  "python_pin": "3.12",
+  "protected_cells": [],
+  "planted_findings": [
+    {
+      "api_id": "pip-install-mesa",
+      "where": "code",
+      "note": "cell f5-code-pip: commented pin 'mesa[rec]==3.3.0'."
+    },
+    {
+      "api_id": "discrete-space-module",
+      "where": "code",
+      "note": "cell f5-code-imports: 'from mesa.discrete_space import ...' is stable since 3.2 and current at 3.3. NOT the experimental.cell_space path (that warns at 3.3)."
+    },
+    {
+      "api_id": "cell-space-classes",
+      "where": "code",
+      "note": "cells f5-code-imports/agent/model: CellAgent, OrthogonalVonNeumannGrid under mesa.discrete_space."
+    },
+    {
+      "api_id": "create-agents",
+      "where": "code",
+      "note": "cell f5-code-model: Car.create_agents(...) is available since 3.1; current at 3.3."
+    },
+    {
+      "api_id": "model-seed-kwarg",
+      "where": "code",
+      "note": "cell f5-code-model: seed= constructor kwarg. Current <=3.4; deprecated 3.5 (-> rng=)."
+    },
+    {
+      "api_id": "batch-run-iterations",
+      "where": "code",
+      "note": "cell f5-code-batch: mesa.batch_run(..., iterations=3). Current <=3.3; deprecated 3.4 (-> rng=[...])."
+    },
+    {
+      "api_id": "space-renderer",
+      "where": "code",
+      "note": "cell f5-code-viz: SpaceRenderer introduced 3.3. IMPORTANT: at 3.3.1 SpaceRenderer has NO setup_agents() (the setup_* chain is 3.4/3.5); the era-correct clean call is renderer.render(agent_portrayal). Deviates from the task's literal 'setup_agents' wording because setup_agents raises AttributeError on 3.3.1 (empirically verified)."
+    },
+    {
+      "api_id": "portrayal-style-classes",
+      "where": "code",
+      "note": "cell f5-code-viz: AgentPortrayalStyle introduced 3.3."
+    },
+    {
+      "api_id": "make-plot-component",
+      "where": "code",
+      "note": "cell f5-code-viz: imported (current since 3.0); judge item."
+    },
+    {
+      "api_id": "run-loop",
+      "where": "code",
+      "note": "MODERNIZATION-BAND (literal id): cell f5-code-run 'for _ in range(20): model.step()'. On upgrade to >=3.5 becomes model.run_for(20)."
+    }
+  ],
+  "upgrade_to_3.4.2": {
+    "change": [
+      {
+        "api_id": "batch-run-iterations",
+        "action": "iterations=3 -> rng=[...] (deprecated 3.4)."
+      },
+      {
+        "api_id": "space-renderer",
+        "action": "renderer.render(agent_portrayal) -> renderer.setup_agents(agent_portrayal) (setup_agents exists from 3.4; render(portrayal) becomes PendingDeprecationWarning at 3.4 - empirically verified on 3.4.2)."
+      }
+    ],
+    "no_change": [
+      "model-seed-kwarg (seed= still clean at 3.4.2)",
+      "discrete-space-module",
+      "create-agents",
+      "portrayal-style-classes"
+    ]
+  },
+  "upgrade_to_3.5.1": {
+    "change": [
+      {
+        "api_id": "batch-run-iterations",
+        "action": "iterations=3 -> rng=[...] (deprecated 3.4)."
+      },
+      {
+        "api_id": "model-seed-kwarg",
+        "action": "seed= -> rng= (deprecated 3.5; update signature + all call sites)."
+      },
+      {
+        "api_id": "space-renderer",
+        "action": "renderer.render(agent_portrayal) -> renderer.setup_agents(agent_portrayal) chain (render(portrayal) emits PendingDeprecationWarning on 3.5.1 - empirically verified)."
+      }
+    ],
+    "stay": [
+      "discrete-space-module",
+      "cell-space-classes",
+      "create-agents",
+      "space-renderer (the CLASS)",
+      "portrayal-style-classes"
+    ],
+    "note": "CORRECTION to the task's simplified claim ('migrated to 3.5.1 should only need iterations->rng, seed->rng; NOT a SpaceRenderer change'; '3.4.2 should only change iterations->rng'). Empirically: SpaceRenderer.setup_agents() did NOT exist at 3.3.1, so F5 must use SpaceRenderer(...).render(agent_portrayal). That render(portrayal) call is clean on 3.3.1 but becomes a PendingDeprecationWarning starting at 3.4 (verified on 3.4.2 and 3.5.1: 'Passing parameters to render() is deprecated. Use setup_structure(), setup_agents()...'). Therefore a real upgrade to EITHER 3.4.2 or 3.5.1 must also switch render(agent_portrayal) to the setup_agents() chain. This is a method-call change on the same SpaceRenderer class (not a class swap; discrete_space and the class itself stay). PendingDeprecationWarning matches the runner's warning regex and IS shown under PYTHONWARNINGS=default, so it would be flagged if F5 were run on 3.4+/3.5 - which is exactly why this fixture's runs_on is 3.3.1, where render(portrayal) is clean."
+  },
+  "notes": "Executes cleanly and warning-free on Mesa 3.3.1 (empirically verified). Deviation from the task spec: F5's viz cell uses SpaceRenderer(...).render(agent_portrayal) instead of .setup_agents(agent_portrayal), because setup_agents does not exist on 3.3.1 (AttributeError). The mesa.visualization import is wrapped in warnings.catch_warnings()+simplefilter('ignore') to silence a Solara hook-validation UserWarning (solara_viz.py:399) emitted only by the 3.3 dependency stack; this guard is required for the zero-warning requirement and is unnecessary (but harmless) at 3.5.1. batch_run prints a tqdm progress bar to stderr (a stream, not a warning). Viz cell ends with a 'page = SolaraViz(...)' assignment."
+}
