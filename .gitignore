@@ -1,0 +1,13 @@
+# build artifacts
+dist/
+*.skill
+
+# python
+__pycache__/
+*.pyc
+
+# jupyter
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
