@@ -1,82 +1,76 @@
 # Contributing
 
-Thanks for helping keep Mesa migrations complete and honest. This file covers
-the **repository workflow**; the skill's own
+This file covers the repository workflow. The skill's own
 [CONTRIBUTING.md](skills/mesa-notebook-updater/CONTRIBUTING.md) covers the
-**internals** — the registry schema, the lifecycle model, and how to verify a
-stamp empirically. Read both before a non-trivial PR.
+internals: the registry schema, the lifecycle model, and how to verify a stamp
+against a real Mesa install. Read that one before touching the reference
+files.
 
 ## Source of truth
 
-`skills/mesa-notebook-updater/` in this repository is the canonical skill.
-The distributable `.skill` bundle is a build artifact — never commit it; CI
-builds it on every push and attaches it to releases on tags.
+The canonical skill is `skills/mesa-notebook-updater/` in this repo. The
+`.skill` bundle is a build artifact; don't commit it. CI builds it on every
+push and attaches it to tagged releases.
 
-## The most valuable contributions
+## What helps most
 
-1. **A new Mesa release shipped.** Run `python3
-   skills/mesa-notebook-updater/scripts/update_catalog.py`, curate the new
-   catalog entry, append the version-history section, and stamp the registry.
-   The step-by-step is in the skill's CONTRIBUTING.
-2. **A false negative** — the skill left something stale. This is the bug class
-   we care most about ("nothing gets missed"). Please include the notebook (or
-   a minimal fixture built like `evals/inputs/*`) and the target version.
-3. **A false positive / wrong replacement** at some target — include the
-   scanner output line and the Mesa version where you verified the correct
-   behavior.
-4. **A new language** for the teaching-text gate — extend `LANG_WORDS` /
-   `RESIDUE` in `scripts/check_text_delta.py` with your language's function
-   words and migration-commentary phrases.
-5. **New eval fixtures** — a notebook that runs green on its own era's Mesa,
-   plus an `evals/expected/<name>.manifest.json` answer key listing every
-   planted finding. Synthetic content only: no copyrighted course material,
-   nothing you can't publish under MIT.
+A new Mesa release shipped. Run
+`python3 skills/mesa-notebook-updater/scripts/update_catalog.py`, curate the
+new catalog entry, add the version-history section, stamp the registry. The
+skill's CONTRIBUTING has the step-by-step.
 
-## Before you open a PR
+The skill left something stale (a false negative). This is the bug class I
+care most about. Include the notebook, or a minimal fixture in the style of
+`evals/inputs/`, and the target version.
 
-Run the three repo checks from the repo root (stdlib only, no network):
+A false positive or a wrong replacement at some target. Include the scanner
+output line and the Mesa version where you checked the actual behavior.
+
+A new language for the text checks. `check_text_delta.py` has two word lists
+(`LANG_WORDS`, `RESIDUE`) that are easy to extend.
+
+New fixtures. A notebook that runs green on its own era's Mesa, plus a
+manifest in `evals/expected/` listing every planted finding. Synthetic content
+only; nothing copyrighted, nothing you can't publish under MIT.
+
+## Before opening a PR
+
+Run the three checks from the repo root (no network needed):
 
 ```bash
-python3 tools/validate_skill.py    # structure, regexes, lifecycle stamps
-python3 tools/check_fixtures.py    # the never-miss regression suite
-python3 tools/package_skill.py     # the bundle still builds
+python3 tools/validate_skill.py
+python3 tools/check_fixtures.py
+python3 tools/package_skill.py
 ```
 
-CI runs exactly these, so green locally means green on the PR.
+CI runs exactly these.
 
 If you changed lifecycle stamps or replacements, verify them against a real
-install (this is a hard rule — every stamp in the registry is empirically
-verified):
+install and say in the PR how you checked. Every stamp in the registry was
+verified this way; guessed stamps cause wrong findings on downgrades.
 
 ```bash
 uv run --python 3.12 --with "mesa[rec]==X.Y.Z" python -c "..."
 ```
 
-and say in the PR **how** you checked. If you changed the SKILL.md workflow or
-the §15b/§15c idiom tables, also run at least one agent-graded eval from
-`evals/evals.json` and report the result.
+If you changed the SKILL.md workflow or the idiom tables, also run at least
+one agent-graded eval from `evals/evals.json` and report the result.
 
-## PR checklist
+Other ground rules:
 
-- [ ] The three `tools/` checks pass locally.
-- [ ] Reference files stay in lockstep: catalog ↔ registry ↔ version-history
-      tell the same story.
-- [ ] New/changed lifecycle stamps state their empirical verification.
-- [ ] Scripts remain stdlib-only, Python ≥ 3.9 (`run_notebook.py`'s `uv`
-      dependency is the only exception).
-- [ ] The skill ships no example models — fixtures live under `evals/`, never
-      inside `skills/`.
-- [ ] No AI-tell prose in migrated text or docs ("seamlessly", "Note that…") —
-      the same reader gate the skill enforces applies to this repo.
+- Keep the reference files consistent with each other: catalog, registry and
+  version-history must tell the same story.
+- Scripts stay stdlib-only, Python 3.9+. `run_notebook.py` needing `uv` is the
+  one exception.
+- The skill ships no example models. Fixtures live under `evals/`, never
+  inside `skills/`.
 
 ## Releases
 
-Maintainers: bump `CHANGELOG.md`, tag `vX.Y.Z`, push the tag. CI builds
-`mesa-notebook-updater.skill` and attaches it to the GitHub release. Claude.ai
-users install from that file; plugin users just pull the repo.
+Maintainers: update `CHANGELOG.md`, tag `vX.Y.Z`, push the tag. CI attaches
+the built `.skill` to the GitHub release.
 
-## Questions / discussion
+## Questions
 
-Open a GitHub issue. For "is this notebook migrated correctly?" questions,
-attach the scanner's `--json` output at your target — it usually answers the
-question by itself.
+Open an issue. For "is this notebook migrated correctly" questions, attach the
+scanner's `--json` output at your target; that usually settles it.
