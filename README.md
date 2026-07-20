@@ -70,14 +70,14 @@ Skills*.
 **Claude Code — as a plugin:**
 
 ```
-/plugin marketplace add OWNER/mesa-notebook-updater
+/plugin marketplace add omarkammouh/mesa-notebook-updater
 /plugin install mesa-notebook-updater@mesa-notebook-updater
 ```
 
 **Claude Code — manual:** copy the skill folder into your skills directory:
 
 ```bash
-git clone https://github.com/OWNER/mesa-notebook-updater.git
+git clone https://github.com/omarkammouh/mesa-notebook-updater.git
 cp -r mesa-notebook-updater/skills/mesa-notebook-updater ~/.claude/skills/
 ```
 
