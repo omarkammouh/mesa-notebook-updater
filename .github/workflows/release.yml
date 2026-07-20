@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Checks
+        run: |
+          python3 tools/validate_skill.py
+          python3 tools/check_fixtures.py
+
+      - name: Build .skill bundle
+        run: python3 tools/package_skill.py
+
+      - name: Attach bundle to the GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/mesa-notebook-updater.skill
+          generate_release_notes: true

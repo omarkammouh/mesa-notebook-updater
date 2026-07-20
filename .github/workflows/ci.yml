@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate skill structure (frontmatter, regexes, lifecycle stamps)
+        run: python3 tools/validate_skill.py
+
+      - name: Never-miss regression (planted findings across targets)
+        run: python3 tools/check_fixtures.py
+
+      - name: Build .skill bundle
+        run: python3 tools/package_skill.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mesa-notebook-updater.skill
+          path: dist/mesa-notebook-updater.skill

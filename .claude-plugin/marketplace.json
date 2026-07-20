@@ -1,0 +1,21 @@
+{
+  "name": "mesa-notebook-updater",
+  "owner": {
+    "name": "Omar Kammouh"
+  },
+  "metadata": {
+    "description": "Migrate Mesa (agent-based modeling) notebooks and models to any Mesa release, with teaching text kept truthful.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "mesa-notebook-updater",
+      "description": "Target-conditioned Mesa migration: upgrade, downgrade, or pin notebooks/.py models to any Mesa release; deterministic never-miss scanner plus minimal-delta teaching-text gate.",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/mesa-notebook-updater"
+      ]
+    }
+  ]
+}
