@@ -709,6 +709,50 @@ right-to-left mapping and the honesty caveats it requires in the report:
 - Never move code *onto* an experimental module to satisfy a downgrade (targeting
   3.1 keeps `mesa.space`; it does not adopt `experimental.cell_space`).
 
+## Auditing a hand migration (someone already updated it)
+
+When the input is a notebook a **person** already migrated — "check my student's
+update", "is this really on 3.5?" — run Steps 1–7 unchanged; the scan is the same
+and the gates still apply. Two things differ, and both are easy to skip:
+
+**1. There are two baselines, and the gates only see one.** The delivered file is
+the pre-edit original for *your* Step 5–6 diffs, which is correct — you must not
+be blamed for their edits, and they must not be hidden inside yours. But the
+question "what did the hand migration change about the *material*" is answered
+only against the **pre-migration original** (the course file it was copied from,
+if you have it). Diff cell counts and types first; it is cheap and it is the only
+way to see what the gates structurally cannot:
+
+```bash
+python3 -c "
+import json,sys
+from collections import Counter
+for p in sys.argv[1:]:
+    nb=json.load(open(p)); print(p, len(nb['cells']), dict(Counter(c['cell_type'] for c in nb['cells'])))
+" course_original.ipynb hand_migrated.ipynb
+```
+
+Observed in the wild on one four-notebook set: 10 `# answer here` placeholder cells
+deleted and the notebook retitled; six non-Python ASCII-art *code* cells converted
+to `raw` (a real fix of a pre-existing defect — that notebook now runs linearly,
+where the original never could); and a whole new exercises section appended. None of
+that is a migration finding. **Report it, don't revert it** — added or removed
+teaching content is the course owner's call, not the migration's.
+
+**2. A hand migration can leave the file WORSE than the original, which your own
+workflow never has to consider.** Ask specifically: did it *introduce* a break? The
+same set had `g.add_legend(handles=[...])` where the course original carried the
+working `legend_data={...}` — a hand-typed regression that made the notebook die at
+that cell. Step 6's runner is what catches this; treat a failure in a hand-migrated
+file as "regression until proven pre-existing" and check the original before
+assuming it was always broken (the mirror of the pre-existence check in Step 6).
+
+Everything else — the seeding sweep, install pins, comments naming removed classes,
+prose the code has outgrown — the normal scan already reports. Expect the split to
+be lopsided: code migrated well, **text and kwargs left behind**, because a person
+fixes what the interpreter complains about and a deprecation that only warns (or a
+comment that never runs) complains at nobody.
+
 ## Answering version questions (no migration)
 
 The catalog answers "what changed in 3.1.3?", "which Python does 2.3.4 vs 3.4.0

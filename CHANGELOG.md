@@ -8,6 +8,16 @@ major one.
 
 Fixes from runs of the skill over a four-notebook course repo.
 
+- New SKILL.md section for **auditing a hand migration**. The description already
+  advertised "check hand-migrated Mesa code", but the workflow assumed you were
+  the one migrating. Two things differ and both are easy to skip: there are two
+  baselines (the gates diff against the delivered file, so content the person
+  added or deleted relative to the *pre-migration* original is invisible unless
+  you diff for it), and a hand migration can leave the file worse than it started
+  — treat a Step 6 failure as a regression until the original proves otherwise.
+  Both drawn from a real audit: 10 answer-placeholder cells deleted, ASCII-art
+  code cells converted to raw (a genuine fix), and a hand-typed
+  `add_legend(handles=)` that broke a notebook whose original ran fine.
 - New `grid-missing-random` scanner rule: a `mesa.discrete_space` grid built
   without `random=self.random` (`OrthogonalMooreGrid`, `Network`, `HexGrid`, …).
   Omitting it emits `UserWarning: Random number generator not specified` at
