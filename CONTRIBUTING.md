@@ -12,6 +12,19 @@ The canonical skill is `skills/mesa-notebook-updater/` in this repo. The
 `.skill` bundle is a build artifact; don't commit it. CI builds it on every
 push and attaches it to tagged releases.
 
+If you also have the skill installed locally (in a skills directory your agent
+loads from), that copy is where the editing happens and this one is a mirror
+of it. Mirrors go stale quietly, so:
+
+```bash
+python3 tools/sync_skill.py           # compare; exits 1 if the mirror is stale
+python3 tools/sync_skill.py --apply   # refresh the mirror from the installed copy
+git config core.hooksPath tools/hooks # once: block commits with a stale mirror
+```
+
+Both are no-ops when the skill is not installed on your machine, so they are
+harmless if you only ever work in the repo.
+
 ## What helps most
 
 A new Mesa release shipped. Run
