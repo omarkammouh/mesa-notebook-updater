@@ -17,6 +17,11 @@
    "note": "Cell 0 Theory: 'a unique_id that you pass to the constructor'. unique_id is auto-assigned since 3.0 — text must not instruct passing it to the constructor."
   },
   {
+   "api_id": "compat-support-claim",
+   "where": "markdown",
+   "note": "Cell 0 banner: 'tested up to mesa 3.2 and may not work on newer versions; not all features of newer mesa versions are supported'. A model↔Mesa compatibility claim with no API name — the version-number and API-name nets miss it. After migration to a target the model is current-best for, the hedge is false: correct to 'up-to-date with mesa <target>' or delete. Judge item; the Step-5 claim pass must disposition it."
+  },
+  {
    "api_id": "stale-term-scheduler",
    "where": "markdown",
    "note": "Cell 5: 'We used the scheduler's step() method to advance the model'. Stale — the model advances via model.run_for / AgentSet.shuffle_do, there is no scheduler."

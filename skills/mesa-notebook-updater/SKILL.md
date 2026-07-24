@@ -70,7 +70,7 @@ mechanical check. The report's digest states any objective not met and why.
 | O1 | **Current at the target**: zero actionable findings | `scan_notebook.py --target` exit 0 / `actionable_count: 0`, incl. the finishing-gate rescan |
 | O2 | **Runs at the target**: pinned execution green with zero Mesa warnings | `run_notebook.py` under the catalog pin (or the documented extraction path for never-linear notebooks) |
 | O3 | **Nothing newer than the target**: zero `not-yet-introduced` | subset of O1, reported separately (the overshoot/downgrade guard) |
-| O4 | **Text contract held**: zero hard text-delta flags; every changed prose/comment cell passes the reader gate | `check_text_delta.py --target` exit 0 + reader-gate walk of `CHANGED`/`CHANGED-COMMENTS` |
+| O4 | **Text contract held**: zero hard text-delta flags; every changed prose/comment cell passes the reader gate; every model↔Mesa *claim* (compatibility/support/tested-range/version) is true of the delivered file, not just number-matched | `check_text_delta.py --target` exit 0 + reader-gate walk of `CHANGED`/`CHANGED-COMMENTS` + `compat-support-claim` judge items dispositioned (Step 5 claim pass) |
 | O5 | **Judge discipline**: every judge finding dispositioned (fixed / false positive + why / correctly-silent) | Step 7 item 4 count == scanner `judge_count` |
 | O6 | **Structure preserved**: same cells, same ids, no added/removed markdown | `CELL-COUNT`/`ADDED-*`/`REMOVED-*` all absent |
 | O7 | **Report complete and true**: all 8 Step-7 items present, digest last, and the facts block carries every fact the file can settle | checklist self-audit + `check_report.py` exit 0 (zero DISAGREE) |
@@ -385,6 +385,38 @@ errors at the target ("pass `seed=`", "the scheduler object", "`MultiGrid`");
 **keep** when only the surviving concept is described ("a random seed", "N
 iterations/replications", "simultaneous activation" as a regime name).
 
+**The claim-verification pass (part of the semantic pass, easy to skip).** The
+rubric above governs prose that names an *API*. A second class of prose names
+no API and carries no wrong number after you fix the banner, yet is still made
+false by the migration: **factual claims about the model↔Mesa relationship** —
+"up-to-date with mesa X", "compatible with newer versions", "tested up to Y",
+"not all features of newer versions are supported", "this model requires mesa
+Z", "feature F is not supported". These are *claims about the delivered work*,
+not descriptions of a mechanism, and they are the one place a migration can
+ship a lie while every mechanical net stays green: `stale-version-claim` only
+checks the version *number*, `check_text_delta` only flags a stale API *name*,
+and neither can read a sentence's truth value. So for every such sentence
+(the scanner surfaces the common phrasings as `compat-support-claim` judge
+items — work that list, then sweep for phrasings it missed), **verify the
+claim against what you actually delivered**, and treat a version banner as a
+claim, not a digit:
+
+- A two-tier banner — "up-to-date with 3.0.3" + "tested up to 3.2.0, not all
+  newer features supported" — does **not** migrate by bumping both numbers to
+  the target. That collapses it into "up-to-date with T / tested up to T /
+  newer features unsupported", which is vacuous (nothing newer than T was
+  tested) *and* false (after a full migration the model **is** the target's
+  current-best form, so it does not lack the target's features). The honest
+  result is the bare "up-to-date with mesa T"; delete the forward-compat hedge —
+  you tested on T, not beyond it, so you cannot assert anything about newer
+  releases, and the "not all features supported" caveat is no longer true.
+- Keep a claim only to the extent the delivered migration backs it. "Requires
+  mesa T" is fine if T is the pin; "supports SolaraViz" is fine only if the
+  notebook still does. When in doubt, state less.
+
+Record every `compat-support-claim` disposition in the report's judge log
+(Step 7 item 4), same as any other judge finding.
+
 **The text-delta gate (mechanical).** After the semantic pass, diff the prose
 against the pre-edit original and let a script catch the contract violations a
 human skims past:
@@ -437,6 +469,12 @@ confirm each of these; if any fails, the edit is too much:
 - **No teaching added or removed** — same worked examples, same numbers (unless
   a number genuinely shifts with the version — then update just that number and
   say so in the report), same exercise wording.
+- **Claims are true, not just number-matched** — for any sentence asserting what
+  the model supports / is compatible with / was tested on / requires (the Step-5
+  claim pass, `compat-support-claim`), confirm it holds for the *delivered* file.
+  Bumping the version number inside a compatibility hedge is not a fix; a
+  now-false "not all newer features supported" must be corrected or deleted, and
+  minimal-delta permits the deletion because the migration changed the fact.
 
 When in doubt, prefer the smaller edit: the ideal migrated markdown cell is
 **byte-identical** to the original, and most cells should be.
@@ -739,6 +777,12 @@ with the narrative):
   with the constructs they describe, and a migration-inserted new-at-target
   API gets a comment when the notebook's style would have one — in the
   author's language, never naming versions.
+- **Claims about the model must be true of the delivered file** — a version/
+  compatibility/support/tested-range sentence is a factual claim, not prose to
+  freeze or a number to bump. Verify it in the Step-5 claim pass
+  (`compat-support-claim`); a hedge the migration made false ("not all newer
+  features supported" once the model is current-best for the target) is
+  corrected or deleted. Number-matching a claim is not verifying it.
 - **Pinned installs**: a `pip install mesa==old` cell becomes the target pin with
   the band-correct extras (`mesa[rec]==V` for 3.0+, plain `mesa==V` for 2.x); keep
   it commented if it was commented.

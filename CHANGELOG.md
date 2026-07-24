@@ -6,7 +6,23 @@ major one.
 
 ## Unreleased
 
-Fixes from a run of the skill over a four-notebook course repo.
+Fixes from runs of the skill over a four-notebook course repo.
+
+- A migration can now catch prose that makes a **claim about the model's
+  relationship to Mesa** — "compatible with newer versions", "tested up to X",
+  "not all features of newer versions are supported", "requires mesa Z" — and
+  goes false once the model is brought current, even though it names no API and
+  carries no wrong number. This was a real miss: bumping the version number
+  inside a two-tier compatibility banner ("up-to-date with 3.0.3 / tested up to
+  3.2.0 / newer features unsupported") left a sentence that was vacuous and
+  false while every mechanical check stayed green. New `compat-support-claim`
+  registry entry surfaces the common phrasings as judge items, a named
+  claim-verification pass in SKILL.md Step 5 makes the agent check each claim
+  against the delivered file, O4 and the hard rules were extended, and a
+  planted finding in the `staleness_only` fixture locks it in. The fix for such
+  a hedge is to correct it to the bare currency line or delete it — the
+  migration changed the fact, so minimal-delta permits the deletion.
+
 
 - The era estimate no longer lets a judge finding set the upper bound. Two
   `nx.spring_layout(graph, iterations=100)` calls matched the `iterations=`

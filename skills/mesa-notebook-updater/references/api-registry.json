@@ -829,8 +829,24 @@
    ],
    "applies_to": "both",
    "judge": true,
-   "replacement": "The claim must state the target version exactly (e.g. 'mesa version {TARGET}').",
-   "note": "Version banners in comments/markdown go stale silently — verify the stated version equals the migration target. Also catches bare 'Mesa 3.5' / '(Mesa v3.5)' banners (judge)."
+   "replacement": "The claim must state the target version exactly (e.g. 'mesa version {TARGET}'). The number is only half the claim — the surrounding sentence (compatibility, tested range, feature support) is a SEPARATE claim the number-bump does not fix; see compat-support-claim and the SKILL.md Step-5 claim pass.",
+   "note": "Version banners in comments/markdown go stale silently — verify the stated version equals the migration target. Also catches bare 'Mesa 3.5' / '(Mesa v3.5)' banners (judge). CAUTION: matching and fixing the version NUMBER is not the same as verifying the SENTENCE. 'up-to-date with X, tested up to Y>X, not all newer features supported' is a two-tier compatibility claim; bumping both numbers to the target collapses it into a vacuous-or-false statement while every mechanical net stays green. Read the whole claim — see compat-support-claim."
+  },
+  {
+   "id": "compat-support-claim",
+   "kind": "prose",
+   "patterns": [
+    "\\bnot all (?:the )?features\\b",
+    "\\bcompatible with (?:newer|older|future|other|all|previous|any)\\b",
+    "\\btested (?:up to|only up to|up until|only on|against)\\b",
+    "\\bsupports? all (?:the )?(?:features|functionalit|mesa)\\b",
+    "\\b(?:should|may|might)(?: still)? (?:not )?(?:work|be supported|be compatible) (?:on|with|in)\\b"
+   ],
+   "applies_to": "both",
+   "judge": true,
+   "judge_when": "always",
+   "replacement": "A claim about what the model SUPPORTS / is COMPATIBLE with / was TESTED on — a factual statement about the model↔Mesa relationship, which the migration just changed. Verify the SENTENCE against the delivered migration, not just any version number in it. After a full migration the model is written in the target's current-best idiom, so a 'not all newer features supported' / 'compatible with newer versions' / 'tested only up to <older>' hedge is now FALSE — correct it or delete it. Keep only what the delivered work backs: you tested on the target, not beyond it, so do not assert forward-compatibility.",
+   "note": "Prose asserting a compatibility / support / tested-range relationship between the model and Mesa, WITHOUT necessarily naming a version or an API — so the version-number net (stale-version-claim) and the API-name net (check_text_delta RESIDUAL-STALE) both miss it. This is the class the SKILL.md Step-5 claim pass exists for. Judge, never blocks zero: not every such sentence is stale (a true statement about Mesa itself — 'Mesa supports networkx graphs' — is fine), so confirm each against the delivered migration and fix or record as a false positive. The worked example: a red 'up-to-date with X / tested up to Y / not all newer features supported' banner."
   },
   {
    "id": "agent-vars-without-reporters",
