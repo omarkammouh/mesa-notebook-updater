@@ -430,14 +430,29 @@
     "\\.coord_iter\\(",
     "\\.iter_neighbors\\(",
     "\\.exists_empty_cells\\(",
-    "\\.get_all_cell_contents\\("
+    "\\.get_all_cell_contents\\(",
+    "\\bgrid\\.remove_agent\\("
    ],
    "applies_to": "both",
    "introduced": null,
    "superseded": "3.2.0",
    "removed": "4.0.0a0",
-   "replacement": "place/move -> agent.cell = grid[(x,y)]; contents -> cell.agents; coord_iter -> for cell in grid.all_cells; move_to_empty -> agent.cell = grid.select_random_empty_cell(); get_all_cell_contents -> model.agents or grid.all_cells.agents",
-   "note": "Only meaningful alongside old mesa.space grids; with discrete_space these calls should no longer exist. Current at targets 3.0–3.1 (mesa.space era)."
+   "replacement": "place/move -> agent.cell = grid[(x,y)]; contents -> cell.agents; coord_iter -> for cell in grid.all_cells; move_to_empty -> agent.cell = grid.select_random_empty_cell(); get_all_cell_contents -> model.agents or grid.all_cells.agents; grid.remove_agent -> agent.remove() (also clears the cell) or agent.cell = None",
+   "note": "Only meaningful alongside old mesa.space grids; with discrete_space these calls should no longer exist. Current at targets 3.0–3.1 (mesa.space era). grid.remove_agent is patterned on the `grid.` receiver, not bare `.remove_agent(`, so a model's own remove_agent method is not mistaken for the grid one — that call has its own entry (model-remove-agent). Probed: mesa.space grids carry remove_agent on 2.1.5/2.4.0/3.0.3/3.2.0/3.5.1; discrete_space grids never had it."
+  },
+  {
+   "id": "model-remove-agent",
+   "kind": "api",
+   "patterns": [
+    "\\b(?:model|self)\\.remove_agent\\s*\\("
+   ],
+   "applies_to": "both",
+   "introduced": null,
+   "judge": true,
+   "judge_when": "always",
+   "verified_absent_through": "3.5.1",
+   "replacement": "agent.remove() — it deregisters the agent from the model AND clears its cell. Removal from a legacy mesa.space grid is grid.remove_agent(agent); on discrete_space, agent.cell = None.",
+   "note": "Model.remove_agent HAS NEVER EXISTED — probed absent on 2.1.5, 2.4.0, 3.0.3, 3.2.0 and 3.5.1 (Model.deregister_agent exists from 2.4, Agent.remove from 2.4). Teaching text that tells the reader to call model.remove_agent(agent) documents an AttributeError, and it is a lifecycle-free error rather than a stale idiom, so no stamp can catch it. Judge, not actionable: a model may legitimately define and call its own remove_agent method — confirm which one this is, then fix the prose or record the false positive."
   },
   {
    "id": "grid-get-neighbor-calls",

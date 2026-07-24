@@ -27,6 +27,11 @@ from nbclient.exceptions import CellExecutionError, CellTimeoutError, DeadKernel
 
 ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 WARN_LINE = re.compile(r"\b\w*(?:Deprecation|Future|User|Runtime)Warning\b")
+# Attribution, not detection: which of the warning lines above blame mesa. A
+# warning line is `path/to/file.py:LINE: SomeWarning: message`, so the emitting
+# package shows up as a path segment; the message body is checked too, for
+# warnings raised through a logging shim.
+MESA_WARN = re.compile(r"[/\\]mesa[/\\]|\bmesa\.\w|\bMesa\b")
 
 
 def strip_ansi(text: str) -> str:
@@ -41,7 +46,14 @@ def excerpt(source: str, max_lines: int = 15) -> str:
 
 
 def report_warnings(nb) -> None:
-    """Print unique warning lines from cell outputs (deprecations = unfinished migration)."""
+    """Print unique warning lines from cell outputs, split by who emitted them.
+
+    A Mesa Deprecation/FutureWarning means the migration is not finished. A
+    warning from matplotlib/seaborn/pandas means the plotting stack moved on
+    and is out of scope unless it blocks the run (SKILL.md Step 6) — saying
+    "the migration is not finished" about one of those sends the reader
+    hunting for a Mesa problem that is not there.
+    """
     seen = {}
     for abs_idx, cell in enumerate(nb.cells):
         if cell.cell_type != "code":
@@ -57,11 +69,17 @@ def report_warnings(nb) -> None:
                     key = strip_ansi(line.strip())[:250]
                     seen.setdefault(key, abs_idx)
     if seen:
+        mesa_lines = [ln for ln in seen if MESA_WARN.search(ln)]
         print(f"\n{len(seen)} unique warning(s) during execution:")
         for line, idx in seen.items():
-            print(f"  [cell {idx}] {line}")
-        print("Mesa Deprecation/FutureWarnings mean the migration is not finished, "
-              "even though the notebook runs.")
+            tag = "mesa " if MESA_WARN.search(line) else "other"
+            print(f"  [{tag}] [cell {idx}] {line}")
+        if mesa_lines:
+            print(f"{len(mesa_lines)} of these come from mesa. Mesa Deprecation/FutureWarnings "
+                  "mean the migration is not finished, even though the notebook runs.")
+        else:
+            print("None of these come from mesa — library drift (matplotlib/seaborn/pandas), "
+                  "out of scope unless it blocks the run. The migration is not implicated.")
 
 
 def report_first_error(nb) -> bool:

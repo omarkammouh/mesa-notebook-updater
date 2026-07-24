@@ -620,7 +620,9 @@ the prose.
 target: 3.5.1                     # the migration target
 file: nb_21e4.ipynb               # basename of the delivered file
 execution: linear-green           # linear-green | extraction | blocked
-warnings_in_outputs: 0            # Future/Deprecation/UserWarnings in stored outputs
+warnings_in_outputs: 0            # Future/Deprecation/UserWarnings in stored outputs,
+                                  # subclasses too (MatplotlibDeprecationWarning counts);
+                                  # a total — say in item 7 which of them are Mesa's
 error_outputs: none               # none, or the cells storing an error output
 output_cells: 1,3,5,7             # none, or the cells with outputs/execution_count
 outputs: regenerated              # cleared | regenerated | preserved | mixed
@@ -695,7 +697,23 @@ with the narrative):
    a target-era `replacement`. Empirically confirm uncertain stamps with a quick
    pinned probe (`uv run --python P --with "mesa==V" python -c "..."`) — every
    stamp already in the registry was verified this way.
-5. Re-run Steps 2–7 on each Mesa model/notebook to roll it forward.
+5. **Re-probe the negative facts.** A handful of entries assert that an API
+   *does not exist* (`model-remove-agent`), which no lifecycle stamp can
+   express and no release note will correct. Each carries
+   `verified_absent_through`; probe them against the new release and either
+   bump that field or, if the API has appeared, convert the entry to a normal
+   `introduced` stamp. Nothing fails when this is skipped — that is exactly why
+   it is a checklist item.
+6. **Move the eval ladder up.** `tools/check_fixtures.py` scans every fixture at
+   a fixed `TARGET_LADDER` whose top entry is meant to be the latest stable.
+   It keeps passing against the old top after a release, so the upgrade
+   direction quietly stops being tested at the version people actually target —
+   bump the top entry and re-run `python3 tools/check_fixtures.py`.
+7. **Refresh what claims to be current.** `version-catalog.json` calls exactly
+   one release "Current stable" in its `highlights`, and `update_catalog.py`
+   preserves curated fields, so the old one keeps the label unless you move it.
+   Same for §0 of version-history.md.
+8. Re-run Steps 2–7 on each Mesa model/notebook to roll it forward.
 
 ## Hard rules
 

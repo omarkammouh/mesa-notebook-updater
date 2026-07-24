@@ -41,7 +41,11 @@ Fields, and what settles each:
     execution               linear-green | extraction | blocked; a linear-green
                             claim is contradicted by a stored error output
     warnings_in_outputs     count of Future/Deprecation/UserWarning occurrences
-                            in the delivered file's stored outputs
+                            in the delivered file's stored outputs, subclass
+                            names included (MatplotlibDeprecationWarning counts).
+                            A total, not a Mesa-only count: whether any of them
+                            are Mesa's — the thing that decides whether the
+                            migration is finished — belongs in report item 7
     error_outputs           `none` or the cell indices storing an error output
     output_cells            `none` or the cells carrying outputs / an
                             execution_count (states partial clearing exactly)
@@ -112,7 +116,12 @@ FENCE_OPEN_RX = re.compile(r"^(?P<indent>[ \t]*)(?P<fence>`{3,}|~{3,})[ \t]*"
 HTML_COMMENT_RX = re.compile(r"<!--.*?(?:-->|\Z)", re.DOTALL)
 HEADING_ONLY_RX = re.compile(r"^[ \t]*(?:#{1,6}[ \t].*)?$")
 
-WARNING_RX = re.compile(r"\b(?:Future|Deprecation|User)Warning\b")
+# Subclass names count: MatplotlibDeprecationWarning IS a warning stored in the
+# outputs, and a report that says 0 while nine of them sit in a cell is wrong.
+# Kept identical to run_notebook.WARN_LINE minus RuntimeWarning (numeric noise,
+# not a migration signal) so the runner and this checker mean the same thing by
+# "a warning" — they disagreeing is what made an honest count read as a lie.
+WARNING_RX = re.compile(r"\b\w*(?:Future|Deprecation|User)Warning\b")
 
 SINGLE_KEYS = [
     "target", "file", "execution", "warnings_in_outputs", "error_outputs",

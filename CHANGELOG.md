@@ -4,6 +4,34 @@ Versions follow SemVer. The reference data is the public surface: a registry
 or catalog refresh is a minor bump, a change to the workflow contract is a
 major one.
 
+## Unreleased
+
+Fixes from a run of the skill over a four-notebook course repo.
+
+- The era estimate no longer lets a judge finding set the upper bound. Two
+  `nx.spring_layout(graph, iterations=100)` calls matched the `iterations=`
+  entry and were enough to report "MIXED — half-migrated notebook" about a
+  notebook that scanned clean at the target. Unconfirmed matches now stay out
+  of the verdict; a genuinely half-migrated notebook still reports MIXED.
+- run_notebook.py labels each warning as mesa or other, and only says the
+  migration is unfinished when one of them is actually Mesa's. It used to say
+  that about a seaborn deprecation.
+- check_report.py counts warning subclasses, so `MatplotlibDeprecationWarning`
+  no longer reads as zero warnings. This makes the checker agree with the
+  runner about what a warning is. **Behavior change:** a report that claimed
+  `warnings_in_outputs: 0` for a notebook with non-Mesa warnings in its outputs
+  will now disagree, correctly — the field is a total, and item 7 of the report
+  says which of them are Mesa's.
+- New registry coverage for agent removal: `grid.remove_agent(` joins
+  `old-grid-methods`, and a new `model-remove-agent` entry catches teaching
+  text that tells the reader to call `model.remove_agent(agent)` — a method
+  that has never existed on `Model` (probed absent on 2.1.5 through 3.5.1).
+  Found in the wild; it had been slipping through.
+- The maintenance checklist in SKILL.md now covers the things a new release
+  does not force you to touch: negative-fact entries (new
+  `verified_absent_through` field), the eval target ladder, and whichever
+  release calls itself "Current stable".
+
 ## 1.1.0 (2026-07-24)
 
 A knowledge and gates refresh; no change to how you use the skill.

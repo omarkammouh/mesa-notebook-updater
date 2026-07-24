@@ -100,6 +100,14 @@ The two ideas everything rests on:
                                       //   on or directly above it, else a `uncommented-new-api`
                                       //   judge item surfaces (for didactically-heavy modern APIs
                                       //   a migration INSERTS — create_agents, run_for, ...)
+  "verified_absent_through": "3.5.1", // (opt) NEGATIVE-FACT entries only: the API named by
+                                      //   this pattern does not exist, and was probed absent
+                                      //   through this release. A lifecycle cannot express
+                                      //   "never existed", so this is the expiry marker —
+                                      //   re-probe on every new release and, if the API
+                                      //   appears, convert the entry to a normal
+                                      //   "introduced" stamp. Nothing enforces it; the
+                                      //   maintenance checklist in SKILL.md is the reminder
   "applicable_min": "3.0.0",          // (opt) the entry's CONCERN only exists in [min,max)
   "by_target": [                      // (opt) per-band overrides; first match wins, [min,max)
     {"min": "3.0.0", "max": "3.4.0", "replacement": "...", "note": "...", "status": "..."}

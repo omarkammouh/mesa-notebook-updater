@@ -774,13 +774,25 @@ def build_ladder(evidence, entries, target):
     return out
 
 
-def era_bracket(evidence, target):
-    """Two-sided era estimate from matched-entry lifecycles (code cells only)."""
+def era_bracket(evidence, target, confident_ids=None):
+    """Two-sided era estimate from matched-entry lifecycles (code cells only).
+
+    `confident_ids` restricts the UPPER bound to entries that came out of the
+    file-wide rules as ACTIONABLE findings. A judge hit means the scanner is not
+    sure the match is the API at all — `iterations=` on an `nx.spring_layout`
+    call, the deliberately-kept ContinuousSpace surface — and an unsure hit must
+    not drive a confident "this notebook is half-migrated" verdict. Without the
+    filter, two networkx layout calls were enough to report MIXED on a notebook
+    that scanned clean at the target. The lower bound is unfiltered: an API that
+    exists only from X.Y.Z bounds the era whether or not it is a finding.
+    """
     code = [e for e in evidence if e["cell_type"] == "code"]
     lowers = [parse_version(e["introduced"]) for e in code if e["introduced"]]
     lower = max(lowers) if lowers else None
     uppers = []
     for e in code:
+        if confident_ids is not None and e["id"] not in confident_ids:
+            continue
         for f in ("deprecated", "superseded", "removed"):
             if e[f]:
                 v = parse_version(e[f])
@@ -938,7 +950,10 @@ def main() -> int:
     actionable = [f for f in all_findings if f["status"] in ACTIONABLE]
     judge = [f for f in all_findings if f["status"] == "judge"]
     work = actionable + judge  # everything needing attention (display order)
-    lower, upper = era_bracket(all_evidence, target)
+    # Only code-cell ACTIONABLE findings license an upper era bound — a judge
+    # hit is by definition an unconfirmed match (see era_bracket).
+    confident_ids = {f["api"] for f in actionable if f["cell_type"] == "code"}
+    lower, upper = era_bracket(all_evidence, target, confident_ids)
     ladder = build_ladder(all_evidence, entries, target)
 
     display = all_findings if args.show_current else work
