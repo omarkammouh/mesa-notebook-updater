@@ -432,6 +432,90 @@ def apply_cell_space_base_rule(path: Path, findings, target):
     return findings
 
 
+# discrete_space grid constructors. The left \b matters: it stops `Network` from
+# matching the tail of a model class name like `VirusOnNetwork(` and stops it
+# from matching legacy `NetworkGrid(` (that has its own old-space entry). Note
+# `Network` must precede the longer names in spirit, but alternation order does
+# not matter here since each is anchored by \b and the trailing `(`.
+GRID_CTOR_RX = re.compile(
+    r"\b(OrthogonalMooreGrid|OrthogonalVonNeumannGrid|HexGrid|Network|VoronoiGrid)\s*\(")
+
+
+def _balanced_args(text, open_paren_idx):
+    """Return the argument substring between the paren at open_paren_idx and its
+    matching close, so a multi-line call collapses to one string to test."""
+    depth = 0
+    for k in range(open_paren_idx, len(text)):
+        if text[k] == "(":
+            depth += 1
+        elif text[k] == ")":
+            depth -= 1
+            if depth == 0:
+                return text[open_paren_idx + 1:k]
+    return text[open_paren_idx + 1:]  # unbalanced source; take the rest
+
+
+def apply_grid_random_rule(path: Path, findings, target):
+    """File-wide rule: a discrete_space grid built WITHOUT `random=`.
+
+    Every `mesa.discrete_space` grid constructor takes `random=self.random`;
+    omit it and Mesa emits `UserWarning: Random number generator not specified,
+    this can make models non-reproducible` at construction (verified on 3.5.x),
+    and the grid's own random selections are unseeded. The notebook still runs,
+    so a green run does not expose it, and the per-line regex layer cannot —
+    absence of a kwarg is not a pattern. This rule flattens each constructor
+    call (comments blanked, newlines joined, balanced to its own close paren)
+    and flags the call when no `random=` appears inside it.
+
+    Judge, never blocks zero: the detection is a heuristic (an exotic RNG hand-
+    off the flatten cannot see would be a false positive), and like the other
+    file-wide rules it surfaces work for the semantic pass rather than gating.
+    """
+    if target < parse_version("3.2.0"):
+        return findings  # discrete_space is not stable before 3.2
+    try:
+        cells = [(idx, src) for idx, ctype, src in iter_cells(path) if ctype == "code"]
+    except Exception:  # noqa: BLE001
+        return findings
+    if not any(DISCRETE_SPACE_RX.search(src) for _, src in cells):
+        return findings
+    for idx, src in cells:
+        raw_lines = src.split("\n")
+        blanked_lines = _blank_comments(src).split("\n")
+        for i, ln in enumerate(blanked_lines):
+            m = GRID_CTOR_RX.search(ln)
+            if not m:
+                continue
+            tail = " ".join(blanked_lines[i:])  # this call may span later lines
+            mo = GRID_CTOR_RX.search(tail)
+            args = _balanced_args(tail, mo.end() - 1)
+            if re.search(r"\brandom\s*=", args):
+                continue
+            klass = m.group(1)
+            findings.append({
+                "file": str(path), "cell": idx, "cell_type": "code",
+                "line_in_cell": i + 1,
+                "text": raw_lines[i].strip()[:200],
+                "api": "grid-missing-random",
+                "status": "judge",
+                "replacement": (f"{klass}(..., random=self.random) — pass the model's "
+                                "RNG so the grid is reproducible; omitting it emits "
+                                "'UserWarning: Random number generator not specified' "
+                                "at construction."),
+                "note": ("discrete_space grid constructed without random=self.random: "
+                         "runs, but Mesa warns at construction and the grid's own "
+                         "random draws (select_random_empty_cell, select_random_cell, "
+                         "layout) are unseeded. The scanner cannot see an ABSENT kwarg "
+                         "per line, so this file-wide rule flattens the call to check. "
+                         "Judge: if the RNG is genuinely provided another way the "
+                         "flatten cannot see, confirm and record a false positive; "
+                         "otherwise add random=self.random."),
+                "introduced": "3.2.0", "deprecated": None,
+                "superseded": None, "removed": None,
+            })
+    return findings
+
+
 def scan_file(path: Path, entries, target, keep_current):
     findings, evidence = [], []
     for idx, ctype, src in iter_cells(path):
@@ -935,6 +1019,7 @@ def main() -> int:
         fnd = apply_continuous_keep_rule(path, fnd)
         fnd = apply_batchrun_context(path, fnd, target, entries)
         fnd = apply_cell_space_base_rule(path, fnd, target)
+        fnd = apply_grid_random_rule(path, fnd, target)
         fnd = apply_pre3_clock_rule(path, fnd, target)
         fnd = apply_comment_coverage(path, fnd, target, entries)
         all_findings.extend(fnd)

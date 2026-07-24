@@ -8,6 +8,18 @@ major one.
 
 Fixes from runs of the skill over a four-notebook course repo.
 
+- New `grid-missing-random` scanner rule: a `mesa.discrete_space` grid built
+  without `random=self.random` (`OrthogonalMooreGrid`, `Network`, `HexGrid`, …).
+  Omitting it emits `UserWarning: Random number generator not specified` at
+  construction and leaves the grid's own random draws unseeded, but the notebook
+  runs green, so neither execution nor the per-line regex layer (a kwarg's
+  absence is not a pattern) exposes it. The rule flattens each constructor call
+  across line breaks and flags the ones with no `random=`. Judge, never blocks
+  zero; the left word boundary keeps `Network(` from matching a model class like
+  `VirusOnNetwork(` or the legacy `NetworkGrid(`. Found by auditing a manual
+  migration that omitted it on every network model. §6.3 updated (it previously
+  said this could only be caught by the semantic pass).
+
 - A migration can now catch prose that makes a **claim about the model's
   relationship to Mesa** — "compatible with newer versions", "tested up to X",
   "not all features of newer versions are supported", "requires mesa Z" — and

@@ -556,9 +556,18 @@ Mapping table:
 
 **Every grid/`Network` constructor takes `random=self.random`** — omit it and Mesa
 emits `UserWarning: Random number generator not specified, this can make models
-non-reproducible` at runtime (a real, easy-to-miss finding: the scanner cannot see
-an *absent* kwarg, so this is a semantic-pass check on every `OrthogonalMooreGrid`/
-`OrthogonalVonNeumannGrid`/`HexGrid`/`Network(...)` call).
+non-reproducible` at runtime, and the grid's own random selections
+(`select_random_empty_cell`, `select_random_cell`, layout) run unseeded. This is a
+real, easy-to-miss finding: the notebook still runs green, so execution does not
+expose it. The scanner's `grid-missing-random` file-wide rule catches it anyway —
+it flattens each `OrthogonalMooreGrid`/`OrthogonalVonNeumannGrid`/`HexGrid`/
+`Network(...)`/`VoronoiGrid(...)` call (across line breaks) and flags the ones with
+no `random=` inside the call. It's a **judge** finding (the absence-check is a
+heuristic), so the semantic pass remains the backstop, but the common case — a
+migrated grid where the author simply forgot `random=` — now surfaces mechanically
+instead of only when someone reads the runtime warning. (Observed in the wild: a
+hand-migrated `Network(self.G, capacity=1)` on every model in a notebook, green run,
+one `UserWarning` per construction.)
 
 #### Dynamic `NetworkGrid` → `Network` — the two traps that silently corrupt network models
 

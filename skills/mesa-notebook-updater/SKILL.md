@@ -235,6 +235,15 @@ stays `mesa.Agent`). This exists because the failure is **silent**: a plain
 on *no* cell — `cell.agents` stays empty and every neighbor mechanic quietly
 returns nothing (verified on 3.5.1). A green run does not expose it.
 
+A fourth file-wide rule, `grid-missing-random`, catches a `mesa.discrete_space`
+grid built without `random=self.random` (`OrthogonalMooreGrid`, `Network`,
+`HexGrid`, `OrthogonalVonNeumannGrid`, `VoronoiGrid`). Omitting it emits a Mesa
+`UserWarning` at construction and leaves the grid's own random draws unseeded,
+yet the notebook runs green — so, like the base-class rule, only this scan or the
+runtime warning exposes it. It flattens each constructor call across line breaks
+and flags the ones with no `random=` inside; **judge** (the absence-check is a
+heuristic), so it never blocks zero and the semantic pass stays the backstop.
+
 ### Step 3 — Read the version history and plan
 
 Open [references/version-history.md](references/version-history.md) and read,
