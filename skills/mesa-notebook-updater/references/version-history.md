@@ -10,7 +10,9 @@ section here and mirror any new deprecations/removals into `api-registry.json`
 **Last updated:** 2026-07-16 · **covers through Mesa 3.5.1** (+ Mesa 4.0.0a0 preview)
 
 > **Every release, machine-readable:** [references/version-catalog.json](version-catalog.json)
-> lists all 88 PyPI releases (one of which, `0.7.8`, has no installable files)
+  every release ever published — all 88 PyPI releases (dates, `requires_python`,
+  yanked/pre-release flags, installability) plus the three GitHub-only ghosts
+  (2.0.0 announced-never-uploaded; 2.0.1 and 2.2.5 tag-only) — 91 records in all,
 > plus the GitHub-only `2.0.0` changelog ghost — 89 records in all — with date,
 > `requires_python`, the curated `python_pin` and `install`
 > string, and the modernization `band`. The scanner validates any `--target`
@@ -87,7 +89,8 @@ viz = ["matplotlib", "solara", "altair", "starlette<1.0"]
 
 | Version | Date | Python | Key changes |
 |---|---|---|---|
-| 2.3.x (last 2.x) | 2024-07 | >=3.9 | Deprecation warnings for schedulers etc.; experimental SolaraViz/JupyterViz |
+| 2.3.x | 2024-04 → 2024-09 | >=3.9 | Experimental SolaraViz, cell_space (CellAgent/OrthogonalMooreGrid, verified 2.3.0) and devs Simulators; mesa.flat deprecation warnings |
+| **2.4.0** (last 2.x) | 2024-09-24 | >=3.9 | **AgentSet activation surface lands**: `shuffle_do`, `agents_by_type`, `groupby`/`agg`; DataCollector `agenttype_reporters` |
 | **3.0.0** | 2024-11-09 | >=3.10 | Mandatory `super().__init__()`; auto `unique_id`; AgentSet replaces schedulers (`mesa.time` deprecated); SolaraViz (experimental); `agenttype_reporters`; `mesa.flat` removed |
 | **3.1.0** | 2024-12-04 | **>=3.11** | **`mesa.time` (schedulers) REMOVED**; other deprecated 2.x functionality removed; `Agent.create_agents()`; experimental cell-space property layers; logging |
 | 3.1.1–3.1.5 | 2024-12 → 2025-03 | >=3.11 | Bugfixes; experimental new ContinuousSpace (3.1.3); viz fixes |
@@ -103,6 +106,10 @@ viz = ["matplotlib", "solara", "altair", "starlette<1.0"]
 
 Sources: https://github.com/mesa/mesa/blob/main/HISTORY.md, https://github.com/mesa/mesa/releases
 
+> Ghost versions (never installable, catalog says so): **0.7.8** is on PyPI with no
+> files; **2.0.0** was announced but never uploaded; **2.0.1** and **2.2.5** exist
+> only as git tags. None is a valid migration target.
+
 ### Official upgrade strategy (from the migration guide)
 
 > - Update to the latest Mesa 2.x release (`mesa<3`).
@@ -117,7 +124,8 @@ Sources: https://github.com/mesa/mesa/blob/main/HISTORY.md, https://github.com/m
 
 | Mesa | Python |
 |---|---|
-| 2.x | >= 3.9 (2.3.x: 3.9–3.12) |
+| 2.1.x | >= 3.8 |
+| 2.2–2.4 | >= 3.9 (2.3.x: 3.9–3.12) |
 | 3.0.x | >= 3.10 |
 | 3.1.x – 3.3.x | >= 3.11 |
 | **3.4.0+ (incl. 3.5.1)** | **>= 3.12** (3.12, 3.13, 3.14 supported) |
@@ -449,7 +457,7 @@ Source: migration guide "Automatic increase of the steps counter"; HISTORY.md 3.
 
 ### 6.2 The new cell-space API: `mesa.discrete_space`
 
-History: introduced as `mesa.experimental.cell_space` in 3.0, **stabilized as `mesa.discrete_space` in 3.2.0** (PR #2610); the experimental alias was deleted in 3.4.0 (#2969) — `from mesa.experimental.cell_space import ...` breaks on 3.4+.
+History: introduced as `mesa.experimental.cell_space` in **2.3.0** (probed: CellAgent/OrthogonalMooreGrid/OrthogonalVonNeumannGrid/HexGrid/Network importable on 2.3.0; FixedAgent/Grid2DMovingAgent/VoronoiGrid are 3.0+), **stabilized as `mesa.discrete_space` in 3.2.0** (PR #2610); the experimental alias was deleted in 3.4.0 (#2969) — `from mesa.experimental.cell_space import ...` breaks on 3.4+.
 
 The model is *cell-centric*: the grid is a collection of connected `Cell` objects; agents live **on cells** (`agent.cell`), not at `(x, y)` tuples managed by the grid.
 
@@ -475,8 +483,9 @@ PropertyLayer(name: str, dimensions: Sequence[int], default_value=0.0, dtype=flo
 Key API:
 - `grid[(x, y)]` → `Cell`; `grid.all_cells` → `CellCollection`; `grid.all_cells.cells` → `list[Cell]`; `grid.empties`; `grid.select_random_empty_cell()`; `grid.width/height` (2D orthogonal grids); `grid.add_cell/remove_cell/add_connection/remove_connection` (dynamic spaces, 3.2+).
 - `Cell`: `.coordinate`, `.agents`, `.is_empty`, `.is_full`, `.capacity`, `.neighborhood` (radius-1 `CellCollection`), `.get_neighborhood(radius=1, include_center=False)`, `.position` (3.5+).
-- `CellCollection`: `.select_random_cell()`, `.select_random_agent()`, `.select(filter_func=None, at_most=inf)`, `.agents`, `.cells`. (Note: **no** `.to_list()` — that's AgentSet-only; use `.cells`.)
+- `CellCollection`: `.select_random_cell()`, `.select_random_agent()`, `.select(filter_func=None, at_most=inf)`, `.agents`, `.cells`. (Note: **no** `.to_list()` — that's AgentSet-only; use `.cells`. And `.agents` is a **lazy iterator** (`itertools.chain`) on 3.5.x — `len(collection.agents)` raises `TypeError`; wrap in `list()` or iterate/comprehend. A single `Cell.agents` is a plain list. Verified on 3.5.1.)
 - Agent base classes: **`CellAgent`** (movable; has read/write `.cell` property) and **`FixedAgent`** (immobile "patch"; `.cell` settable once). `Grid2DMovingAgent` adds `move(direction: str, distance: int = 1)` with compass shorthands. Assigning `agent.cell = some_cell` performs the move (registration in cell agent lists is automatic).
+  **Hazard (verified on 3.5.1):** the registration only happens for `CellAgent`/`FixedAgent` subclasses — a plain `mesa.Agent` given `self.cell = grid[...]` constructs **without any error** but appears on **no** cell: `cell.agents` and `grid.all_cells.agents` stay empty, so every neighbor-based mechanic silently returns nothing. This is a wrong-results bug a green run does not expose; the scanner's file-wide `cell-space-base-class` rule flags plain `Agent` classes in discrete_space files for exactly this reason.
 
 ### 6.3 OLD → NEW space code
 
@@ -678,6 +687,28 @@ results = mesa.batch_run(
 - The seed is passed to your model's `rng` parameter — so your `__init__` should accept/forward `rng` (or at least `seed` pre-3.4-style). Result rows contain `RunId`, `iteration`, `Step`, each parameter, model reporters, and (if agent reporters) `AgentID` + agent reporters (verified keys: `['AgentID', 'Gini', 'RunId', 'Step', 'Wealth', 'height', 'iteration', 'n']`).
 - **Gotcha (verified empirically on 3.5.1):** `batch_run` emits **zero rows** when the model's DataCollector defines only `agent_reporters` — its collection steps are derived from model-reporter collections, so an agent-reporters-only collector silently yields an empty result list (2.x returned the agent rows). Fix: add at least one model reporter (e.g. `{"MaxWealth": lambda m: m.agents.agg("wealth", max)}`). A migration that leaves an agent-reporters-only collector feeding `batch_run` has silently changed behavior — check the row count against the pre-migration run.
 - **Mesa 4.0 removes `batch_run` entirely** (→ `Scenario`-based experiment management, #3134/#3325).
+
+### 8b. Scenario — the 4.0-target replacement for `batch_run` (experimental)
+
+Only relevant when the **target is 4.0.0a0**; at every 3.x target keep
+`batch_run`. `Scenario` lives under `mesa.experimental.scenarios` (still
+experimental in the 4.0 dev branch — say so in the report):
+
+```python
+from mesa.experimental.scenarios import Scenario
+
+class MyScenario(Scenario):
+    density: float = 0.7          # typed parameter fields
+
+results = []
+for density in (0.5, 0.7, 0.9):
+    for seed in seeds:
+        model = MyModel(scenario=MyScenario(density=density), rng=seed)
+        model.run_for(max_steps)
+        results.append(model.datacollector.get_model_vars_dataframe())
+```
+
+SolaraViz routes scenario fields to input widgets automatically (#3178).
 
 Source: migration guide "Mesa 3.4.0 — batch run"; `mesa/batchrunner.py` @ v3.5.1.
 
@@ -889,7 +920,7 @@ model.schedule_event(callback, at=50.0)     # absolute time
 model.schedule_event(callback, after=5.0)   # relative time
 event = model.schedule_event(callback, at=100.0); event.cancel()
 
-# Recurring events
+# Recurring events (Schedule takes interval, start, end, count)
 from mesa.time import Schedule               # mesa.time is the NEW event module (3.5+)
 model.schedule_recurring(func, Schedule(interval=10))            # first run at t=10
 model.schedule_recurring(func, Schedule(interval=10, start=0))   # start immediately
@@ -910,6 +941,17 @@ model.schedule_recurring(func, Schedule(interval=1.0, count=10)) # limit executi
 Source: migration guide "Mesa 3.5.0"; HISTORY.md 3.5.0/3.5.1.
 
 ---
+
+### §11 semantic rules (verified / release-note facts, 3.5.1+)
+
+- **Callbacks must be named functions or bound methods.** `schedule_event` /
+  `schedule_recurring` store callbacks weakly: a lambda or `functools.partial`
+  fails fast on 3.5.1+ (#3320) and can silently die (never fire) on 3.5.0
+  (#3360). Migrations must never emit `model.schedule_event(lambda: ..., ...)`.
+- **Monotonic time is enforced** (3.5.1+, #3343/#3329): scheduling an event at
+  a time in the past raises. Compute `at=` from `model.time`, never from 0.
+- `Schedule(interval=..., start=..., end=..., count=...)` — `end` exists too
+  (#3250); start > end is validated on 3.5.1 (#3326).
 
 ## 12. Deprecation/removal timeline cheat sheet ("worked in 3.0, gone later")
 
@@ -933,7 +975,7 @@ Source: migration guide "Mesa 3.5.0"; HISTORY.md 3.5.0/3.5.1.
 | `batch_run` (entire function) | — | **4.0** (#3325) | `Scenario` + direct model control |
 | `PropertyLayer` class | — | **4.0** (#3340) | NumPy arrays on grid (`property_layers`) |
 
-Also: all Mesa deprecation warnings use `FutureWarning` since 3.4.0 (#2905) so they're visible by default; formal deprecation policy in CONTRIBUTING.md.
+Also: all Mesa deprecation warnings use `FutureWarning` since 3.4.0 (#2905) so they're visible by default; formal deprecation policy in CONTRIBUTING.md. **Verified exceptions:** AgentSet indexing warns `PendingDeprecationWarning` and ONLY on derived sets (top-level `model.agents[i]` is silent), and `renderer.render(portrayal)` warns `PendingDeprecationWarning` — the scanner, not warnings, is the net for those.
 
 ---
 
@@ -966,6 +1008,13 @@ All messages below were **reproduced on Mesa 3.5.1** unless noted.
 | Dashboard shows but agents don't appear / `agent_portrayal` errors under 3.3+ | dict portrayal fields from 2.x (`"Shape"/"Color"/"r"/"Layer"`) don't map | Return `AgentPortrayalStyle(color=..., marker=..., size=...)` |
 
 ---
+
+### 3.5.1+ event-system errors (new code, not migration leftovers)
+
+| Error | Cause | Fix |
+|---|---|---|
+| `TypeError`/fail-fast on `schedule_event(lambda: ...)` | lambdas/partials unsupported (weakref callbacks, #3320) | use a named function or bound method |
+| error scheduling event at `at=t` | `t` < `model.time` — monotonic time enforced (#3343) | compute `at`/`after` from `model.time` |
 
 ## 14. Minimal complete before/after example (verified running on 3.5.1)
 
@@ -1063,13 +1112,17 @@ reason to keep a dated form *within* the band.
 
 ### The band table (pick the row for your target)
 
+> Targets below 2.1 (`0.x`/`1.x` catalog bands) have **no modernization band**
+> — apply ladder correctness fixes only and say so in the report; the band
+> step is n/a there.
+
 | Band (targets) | python_pin | Install | Activation | Agent creation | Space | Seeding | Batch | Visualization | Run loop |
 |---|---|---|---|---|---|---|---|---|---|
 | **2.1–2.4** | 3.11 | `mesa==V` (no extras) | schedulers (`RandomActivation`, …) | loop + `unique_id` + `schedule.add` | `mesa.space` | `self.random`, own seed plumbing | `batch_run(iterations=)` / `BatchRunner` (≤2.2) | ModularServer/CanvasGrid; 2.3+ experimental SolaraViz | `for _ in range(n): model.step()` |
 | **3.0** | 3.12 | `mesa[rec]==V` | AgentSet `do/shuffle_do` | **loop** (no `unique_id`; `create_agents` **absent**) | **keep `mesa.space`** (cell_space experimental) | `seed=` | `iterations=` | SolaraViz + `make_space_component` + lowercase portrayal dicts | loop |
 | **3.1** | 3.12 | `mesa[rec]==V` | AgentSet | **`create_agents`** (since 3.1) | **keep `mesa.space`** (discrete_space not stable until 3.2) | `seed=` | `iterations=` | as 3.0 | loop |
-| **3.2** | 3.12 | `mesa[rec]==V` | AgentSet (+ `groupby/agg`, since 3.0) | `create_agents` | **`mesa.discrete_space`** + `PropertyLayer` | `seed=` | `iterations=` | portrayal dicts + `make_space_component` (**no SpaceRenderer**) | loop |
-| **3.3** | 3.12 | `mesa[rec]==V` | AgentSet | `create_agents` | discrete_space | `seed=` | `iterations=` (**`rng=` absent**) | **`SpaceRenderer(model, backend=…).render(agent_portrayal)`** + `AgentPortrayalStyle`/`PropertyLayerStyle` (**no `setup_*` chain — 3.4+**; dicts still current, not best); **no `run_for`** | loop |
+| **3.2** | 3.12 | `mesa[rec]==V` | AgentSet (+ `groupby/agg`, since 2.4) | `create_agents` | **`mesa.discrete_space`** + `PropertyLayer` | `seed=` | `iterations=` | portrayal dicts + `make_space_component` (**no SpaceRenderer**) | loop |
+| **3.3** | 3.12 | `mesa[rec]==V` | AgentSet | `create_agents` | discrete_space | `seed=` | `iterations=` (**`rng=` absent**) | **`SpaceRenderer(model, backend=…).render(agent_portrayal)`** + `AgentPortrayalStyle`/`PropertyLayerStyle` (**no `setup_*` chain — 3.4+**; dicts run but WARN per agent from 3.3.1 — return `AgentPortrayalStyle` at every >=3.3 target); **no `run_for`** | loop |
 | **3.4** | 3.12 | `mesa[rec]==V` | AgentSet | `create_agents` | discrete_space | **`rng=`** recommended (`seed=` still current) | **`batch_run(rng=[…])`** (`iterations` deprecated) | SpaceRenderer **`setup_*` chain** (new in 3.4; portrayal-to-`render()` now warns) + styles; `model.time` exists | loop |
 | **3.5** | 3.12 | `mesa[rec]==V` | AgentSet + `.to_list()` for indexing | `create_agents` / `from_dataframe` | discrete_space | **`rng=` end-to-end** (`seed=` deprecated) | `batch_run(rng=)` | SpaceRenderer `setup_*` chain; dicts + `make_space_component` deprecated | **`run_for`/`run_until`/`schedule_*`** |
 | **4.0.0a0** (opt-in) | 3.12 | `mesa[rec]==V` | AgentSet | same | discrete_space only (`mesa.space` gone) | `rng=` only | **no `batch_run`** → `Scenario` | styles only | `run_for`; `model.time` (no `model.steps`) |
@@ -1087,10 +1140,10 @@ in **every** 3.x band — no stable replacement through 3.5.1.)
    shift; report it.
 2. **Run loops** — *since 3.5*: `for _ in range(n): model.step()` → `model.run_for(n)`.
    Below 3.5 the explicit loop **is** current-best.
-3. **Filtering/aggregation over agents** — *since 3.0*: comprehensions/accumulators
+3. **Filtering/aggregation over agents** — *since 2.4 (select/groupby/agg surface), primary from 3.0*: comprehensions/accumulators
    → `agents.select(pred)`, `agents.agg("wealth", sum)`, `agents.groupby("state").count()`,
    `agents.get/set/map`. Prime DataCollector-reporter candidates.
-4. **Multi-type data collection** — *since 3.0* (in `batch_run` *since 3.4.1*):
+4. **Multi-type data collection** — *since 2.4 (`agenttype_reporters`, verified)* (in `batch_run` *since 3.4.1*):
    shared `agent_reporters` + hasattr guards → `agenttype_reporters={Type: {...}}`.
 5. **Seeding** — *`rng=` recommended since 3.4, mandatory since the 3.5 `seed=`
    deprecation*: at **≤3.3** targets `seed=` is current-best — do **not** rewrite to
@@ -1109,8 +1162,10 @@ in **every** 3.x band — no stable replacement through 3.5.1.)
    at **3.3** the form is `SpaceRenderer(model, backend=…).render(agent_portrayal)`
    (the `setup_*` chain does not exist yet — emitting it at 3.3 crashes); at **3.4+**
    use `setup_agents(p)` then `render()`/`draw_agents()` (portrayal-to-`render()`
-   warns from 3.4). At 3.3–3.4 portrayal dicts / `make_space_component` are still
-   current (not a finding); at **3.5+** the dicts/factory are deprecated so the move
+   warns from 3.4). At 3.3–3.4 `make_space_component` is still current (deprecated
+   only in 3.5) — but portrayal **dicts** emit a per-agent DeprecationWarning from
+   3.3.1 (verified), so at every >=3.3 target return `AgentPortrayalStyle`; the
+   official #3144 deprecation lands in 3.5.0.
    is mandatory. Below 3.3 the current-best is `make_space_component` + lowercase dicts.
 10. **Bulk attribute updates** — *since 3.0*: `for a in agents: a.x = v` → `agents.set("x", v)`.
 11. **Agent base class by mobility** — *cell-space since 3.2*: on `discrete_space`,
@@ -1149,7 +1204,7 @@ states that form. General mapping (newest → target-era):
 | Newer API (era) | Target-era form | Since |
 |---|---|---|
 | `model.run_for(n)` / `run_until` | `for _ in range(n): model.step()` | 3.5 |
-| `model.schedule_event/schedule_recurring` | no pre-3.5 equivalent; Simulator classes (3.0–3.4) for event-driven models | 3.5 |
+| `model.schedule_event/schedule_recurring` | no pre-3.5 equivalent; Simulator classes (2.3–3.4) for event-driven models | 3.5 |
 | `agents.to_list()[i]` | `agents[i]` (indexing is current below 3.5) | 3.5 |
 | `Agent.from_dataframe(...)` | `create_agents` (3.1+) or an explicit loop | 3.5 |
 | `batch_run(rng=[…])` | `batch_run(iterations=n)` | 3.4 |
@@ -1160,6 +1215,25 @@ states that form. General mapping (newest → target-era):
 | `AgentClass.create_agents(...)` | explicit `for i in range(n): AgentClass(model, ...)` | 3.1 |
 | `super().__init__(rng=...)` model kwarg | `super().__init__(seed=...)` (rng exists 3.0+, but `seed=` is the ≤3.3 band form; both seed `self.random`) — rename the param and every call site | 3.4 (band pref) |
 | auto `unique_id` | manual ids (`Agent(unique_id, model)`) only if target < 3.0 | 3.0 |
+| `model.steps` | `schedule.steps` — **actionable, not cosmetic**: 2.x `Model` has no public `steps` (private `_steps` only), so it is an `AttributeError` at the first `datacollector.collect()` | 3.0 |
+| `agents.shuffle_do("step")` as the model's clock | `RandomActivation` + `schedule.add` + `schedule.step()` — see the sub-3.0 trap below | 3.0 |
+
+**The sub-3.0 clock trap (verified on 2.4.0).** The AgentSet surface itself
+(`model.agents`, `do`/`shuffle_do`/`select`/`groupby`/`agg`) exists from 2.4, so
+AgentSet activation *looks* portable down to 2.4 — it is not, because below 3.0
+the AgentSet does not drive the clock:
+
+- `model.steps` does not exist (2.x has only the private `_steps`).
+- `batch_run` loops `while model.running and model._steps <= max_steps`, and
+  `_steps` is advanced only by a scheduler's `step()`. A downgraded model that
+  keeps `agents.shuffle_do(...)` with no scheduler scans clean and then **hangs
+  forever** in every `batch_run` cell — no error, 100% CPU.
+
+So a sub-3.0 downgrade must reintroduce a real scheduler
+(`RandomActivation(self)` + `schedule.add(agent)` + `schedule.step()`) and map
+`model.steps` → `schedule.steps`. Never poke `_steps`/`_advance_time` — they are
+private. Note the activation permutations differ from `shuffle_do`, so seeded
+trajectories shift (same regime, same draw count; report it).
 
 **`mesa.discrete_space` → `mesa.space` reverse table** (the NEW→OLD inversion of
 §6.3 — a full rewrite of every space call, *the largest chunk* of a sub-3.2

@@ -31,11 +31,21 @@ PYPI_URL = "https://pypi.org/pypi/mesa/json"
 HISTORY_URL = "https://raw.githubusercontent.com/mesa/mesa/main/HISTORY.md"
 
 # GitHub-only ghost releases (in changelog/tags but never uploaded to PyPI).
+# Regens keep ONLY the ghosts listed here — when a new tag appears on
+# https://github.com/mesa/mesa/tags with no matching PyPI release, add it.
 GHOSTS = [
     {"version": "2.0.0", "date": "2023-07-15", "on_pypi": False, "installable": False,
      "band": "2.1-2.4", "python_pin": "3.11", "install": None,
      "note": "Codename Wellton; announced but never uploaded to PyPI — invalid "
              "target. Nearest installable: 2.1."},
+    {"version": "2.0.1", "date": "2023-07-23", "on_pypi": False, "installable": False,
+     "band": "2.1-2.4", "python_pin": "3.11", "install": None,
+     "note": "Git tag only (v2.0.1, same day as 2.1) — never uploaded to PyPI; "
+             "invalid target. Nearest installable: 2.1."},
+    {"version": "2.2.5", "date": "2024-02-24", "on_pypi": False, "installable": False,
+     "band": "2.1-2.4", "python_pin": "3.11", "install": None,
+     "note": "Git tag only (v2.2.5) — never uploaded to PyPI; invalid target. "
+             "Nearest installable: 2.2.4 (below) or 2.3.0 (above)."},
 ]
 
 # ---------------------------------------------------------------------------
@@ -51,16 +61,16 @@ CURATION = {
     "2.2.0": {"band": "2.1-2.4", "highlights": ["AgentSet introduced (model.agents); schedulers still primary"]},
     "2.2.1": {"band": "2.1-2.4"}, "2.2.2": {"band": "2.1-2.4"}, "2.2.3": {"band": "2.1-2.4"}, "2.2.4": {"band": "2.1-2.4"},
     "2.3.0": {"band": "2.1-2.4",
-              "highlights": ["Experimental SolaraViz/JupyterViz added; scheduler-deprecation groundwork"],
-              "additions": ["SolaraViz (experimental)", "JupyterViz (experimental)"]},
+              "highlights": ["Experimental SolaraViz, cell_space (CellAgent/OrthogonalMooreGrid) and devs Simulators added"],
+              "additions": ["SolaraViz (experimental)", "experimental cell_space (CellAgent, OrthogonalMooreGrid, OrthogonalVonNeumannGrid, HexGrid, Network)", "experimental devs (ABMSimulator/DEVSimulator)"]},
     "2.3.1": {"band": "2.1-2.4"}, "2.3.2": {"band": "2.1-2.4"}, "2.3.3": {"band": "2.1-2.4"},
-    "2.3.4": {"band": "2.1-2.4", "highlights": ["Last 2.3.x; deprecation warnings for schedulers/old idioms"]},
-    "2.4.0": {"band": "2.1-2.4", "highlights": ["Final Mesa 2.x release before the 3.0 break"]},
+    "2.3.4": {"band": "2.1-2.4", "highlights": ["Last 2.3.x; deprecation warnings for mesa.flat and other 2.x cleanups (schedulers deprecate at 3.0)"]},
+    "2.4.0": {"band": "2.1-2.4", "highlights": ["Final 2.x: AgentSet activation surface lands (shuffle_do, agents_by_type, groupby/agg); DataCollector agenttype_reporters"], "additions": ["AgentSet surface: shuffle_do, do, agents_by_type, groupby, agg", "DataCollector agenttype_reporters"]},
     "3.0.0": {"band": "3.0",
               "highlights": ["Mandatory super().__init__(); automatic unique_id; schedulers deprecated (AgentSet replaces them); SolaraViz; agenttype_reporters; mesa.flat removed"],
               "breaking": ["automatic unique_id (no unique_id arg to Agent)", "mesa.flat namespace removed", "old ModularServer visualization removed"],
               "deprecations": ["mesa.time schedulers (RandomActivation etc.)"],
-              "additions": ["AgentSet (select/groupby/agg/do/shuffle_do)", "SolaraViz + make_space_component/make_plot_component", "DataCollector agenttype_reporters", "experimental cell_space", "experimental PropertyLayer", "self.rng (numpy Generator)"]},
+              "additions": ["AgentSet becomes the primary activation mechanism (surface exists since 2.4)", "SolaraViz + make_space_component/make_plot_component", "experimental cell_space (since 2.3; FixedAgent/Grid2DMovingAgent new in 3.0)", "experimental PropertyLayer", "self.rng (numpy Generator)"]},
     "3.0.1": {"band": "3.0", "highlights": ["DEVS bugfixes; Simulator support in SolaraViz"]},
     "3.0.2": {"band": "3.0", "highlights": ["Example-model visualization bugfixes"]},
     "3.0.3": {"band": "3.0", "highlights": ["Allow empty CellCollection; model_parameters init fix"]},
@@ -81,7 +91,7 @@ CURATION = {
               "additions": ["mesa.discrete_space (stable)", "PropertyLayer (stable)", "meta-agents"]},
     "3.3.0": {"band": "3.3",
               "highlights": ["New visualization API: SpaceRenderer, AgentPortrayalStyle, PropertyLayerStyle; full Altair+Matplotlib; multipage dashboards (backwards compatible)"],
-              "additions": ["SpaceRenderer", "AgentPortrayalStyle", "PropertyLayerStyle", "make_plot_component(page=)", "Altair tooltips"]},
+              "additions": ["SpaceRenderer", "AgentPortrayalStyle", "PropertyLayerStyle", "make_plot_component(page=)"]},
     "3.3.1": {"band": "3.3", "highlights": ["PropertyLayer viz bugfixes (HexGrid, Altair/Matplotlib); AgentPortrayalStyle migration docs"]},
     "3.4.0": {"band": "3.4",
               "highlights": ["Universal model.time clock; batch_run(rng=) replaces iterations; Python 3.12+ required; org renamed projectmesa→mesa; experimental cell_space module deleted"],
@@ -105,11 +115,18 @@ CURATION = {
 
 
 def band_for(version):
-    """Coarse band from a version string, for versions with no curated band."""
+    """Coarse band from a version string, for versions with no curated band.
+
+    An X.Y.0 PRE-release belongs to the PREVIOUS band: at 3.5.0b0 the 3.5
+    additions (run_for, to_list) are not final API yet — lifecycle math
+    treats 3.5.0b0 < 3.5.0, so the band must too (3.1.0.dev0 -> 3.0,
+    3.5.0b0 -> 3.4, 3.0.0aX -> 2.1-2.4)."""
     t = parse_version(version)
     if t >= parse_version("4.0.0a0"):
         return "4.0.0a0"
     if t >= parse_version("3.0.0"):
+        if t[4] < 9 and t[2] == 0 and t[3] == 0:  # X.Y.0 prerelease
+            return "2.1-2.4" if t[1] == 0 else f"{t[0]}.{t[1] - 1}"
         return f"{t[0]}.{t[1]}"
     if t >= parse_version("2.1"):
         return "2.1-2.4"

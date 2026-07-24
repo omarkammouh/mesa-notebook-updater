@@ -28,9 +28,14 @@ references/
 scripts/                      stdlib-only unless noted; run on Python 3.9+
   mesa_versions.py            version parsing + status_at() lifecycle math (+ selftest)
   scan_notebook.py            the target-conditioned scanner (needs the catalog+registry)
+                              (+ three FILE-WIDE rules regex-per-line cannot express:
+                               the ContinuousSpace keep rule, the discrete_space base-class
+                               rule, and `pre3-agentset-clock` — AgentSet activation with no
+                               scheduler at a <3.0 target, which hangs batch_run forever)
   check_text_delta.py         the teaching-text gate (minimal-delta / no-translation / residue)
   run_notebook.py             executes a notebook pinned to a Mesa version (needs uv)
-  normalize_notebook.py       canonicalizes a notebook via nbformat
+  normalize_notebook.py       canonicalizes a notebook via nbformat (+ --original:
+                              the execution-state gate — no aborted-run output ships)
   update_catalog.py           refreshes version-catalog.json from PyPI
 ```
 
@@ -50,6 +55,10 @@ The two ideas everything rests on:
    `--pypi-json FILE` to work offline). It fills mechanical fields (date,
    `requires_python`, `on_pypi`, `installable`, `yanked`) and prints a
    "needs curation" list; it never overwrites your curated fields.
+   Also glance at https://github.com/mesa/mesa/tags: a version **tagged but never
+   uploaded to PyPI** (it happens — 2.0.0, 2.0.1, 2.2.5) is invisible to the PyPI
+   fetch and must be added to the `GHOSTS` list at the top of
+   `scripts/update_catalog.py` — regens preserve only the ghosts listed there.
 2. **Curate the release** in `references/version-catalog.json`: `python_pin`
    (a Python the release actually supports), `install` (`mesa[rec]==X.Y.Z` for
    3.0+, plain `mesa==X.Y.Z` for 2.x), `band`, and the `highlights` /
@@ -77,12 +86,32 @@ The two ideas everything rests on:
                  "work list. May contain {TARGET}.",
   "note":  "free text shown with the finding",
   "judge": true,                      // surface for a human check even when computed 'current'
+  "judge_when": "stale",              // (opt) "always" (default) = also surface when the API is
+                                      //   current at the target (the entry carries a check worth
+                                      //   running on correct code); "stale" = only surface when the
+                                      //   lifecycle says stale/not-yet-introduced — use when judge
+                                      //   exists purely so an ambiguous pattern (pandas .to_list(),
+                                      //   numpy .rng) cannot hard-block the zero gate
+  "multiline": true,                  // (opt) also match on a newline-flattened, comment-blanked
+                                      //   copy of each code cell — for kwarg patterns whose call
+                                      //   can span lines (super().__init__( ... seed= ... ))
+  "explain": true,                    // (opt) comment-parity check: when this API is current at
+                                      //   the target, every matching code line must have a comment
+                                      //   on or directly above it, else a `uncommented-new-api`
+                                      //   judge item surfaces (for didactically-heavy modern APIs
+                                      //   a migration INSERTS — create_agents, run_for, ...)
   "applicable_min": "3.0.0",          // (opt) the entry's CONCERN only exists in [min,max)
   "by_target": [                      // (opt) per-band overrides; first match wins, [min,max)
     {"min": "3.0.0", "max": "3.4.0", "replacement": "...", "note": "...", "status": "..."}
   ]
 }
 ```
+
+A band's explicit `status` is honored **verbatim** by the scanner. The one worth
+knowing: `"status": "judge"` makes a stale-at-this-target prose hit surface
+*without* blocking the zero gate — use it for prose whose token might belong to
+another library (`seed=`, `iterations=`), where a hard `stale-term` would make
+"re-scan until zero" unreachable on a legitimate false positive.
 
 Rules of thumb:
 - A **new deprecation** on an existing API is a one-field edit: add `"deprecated": "X.Y.Z"`.
@@ -92,6 +121,16 @@ Rules of thumb:
   that other libraries also use). The scanner over-reports on purpose.
 - `mesa_versions.validate_lifecycle` rejects prose in a version field at load time —
   every stamp must be a real version string (`"3.1"`, `"4.0.0a0"`, …).
+- **Prose/comment patterns must be MORPHOLOGICAL, not exact words.** A `kind: "api"`
+  entry matches exact identifiers (`\bBaseScheduler\b`); a misspelled identifier in a
+  *comment* (e.g. `# Run with BaseSRcheduler`) then slips past it — and the text-delta
+  gate is markdown-only, so it's a double blind spot (the one real miss found in the
+  wild). The `stale-term-*` prose twins exist to catch exactly this, so pattern them on
+  the distinctive *morpheme* (`\b\w*chedulers?\b`, not `\bschedulers?\b`) so typos and
+  compounds still surface, while confirming the pattern still spares the surviving
+  concept word (`scheduling`, `schedule_event`). Every exact-token `api` entry whose
+  concept also appears in prose (schedulers, space classes, `seed=`) wants a
+  `stale-term-*` comment/markdown twin with a morpheme pattern.
 
 ## Verify a lifecycle stamp empirically (don't guess)
 
@@ -148,7 +187,8 @@ final authority on voice, so a missing language degrades gracefully.
 
 ## Ground rules
 
-- Scripts stay **stdlib-only** (except `run_notebook.py`, which needs `uv`) and
+- Scripts stay **stdlib-only** (except `run_notebook.py`, which needs `uv`, and
+  `normalize_notebook.py`, which needs `nbformat` — run it via `uv run --with nbformat`) and
   run on Python 3.9+ — keep them dependency-free so the skill is portable.
 - The skill ships **no models** — keep example notebooks in a separate bundle.
 - Every registry stamp is **empirically verified**; note how you checked it.

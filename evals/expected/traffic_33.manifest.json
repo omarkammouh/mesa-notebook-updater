@@ -16,7 +16,7 @@
       "note": "cell f5-code-imports: 'from mesa.discrete_space import ...' is stable since 3.2 and current at 3.3. NOT the experimental.cell_space path (that warns at 3.3)."
     },
     {
-      "api_id": "cell-space-classes",
+      "api_id": "cell-space-classes-early",
       "where": "code",
       "note": "cells f5-code-imports/agent/model: CellAgent, OrthogonalVonNeumannGrid under mesa.discrete_space."
     },
@@ -91,7 +91,7 @@
     ],
     "stay": [
       "discrete-space-module",
-      "cell-space-classes",
+      "cell-space-classes-early",
       "create-agents",
       "space-renderer (the CLASS)",
       "portrayal-style-classes"

@@ -38,8 +38,8 @@ skills/mesa-notebook-updater/   the skill itself; this is what gets installed
   SKILL.md                      the workflow
   CONTRIBUTING.md               internals: registry schema, adding a release
   references/
-    version-catalog.json        all 89 Mesa releases: dates, python pin, install
-                                string, what changed
+    version-catalog.json        every Mesa release (91 at last count): dates,
+                                python pin, install string, what changed
     api-registry.json           API patterns with lifecycle stamps (introduced,
                                 deprecated, superseded, removed)
     version-history.md          per-version notes, plus the "best idiom at this
@@ -48,6 +48,8 @@ skills/mesa-notebook-updater/   the skill itself; this is what gets installed
   scripts/                      stdlib Python 3.9+; uv only needed to execute
     scan_notebook.py            the scanner (code and markdown)
     check_text_delta.py         the teaching-text check
+    check_report.py             checks the final report's facts block against
+                                the delivered file, so the summary can't lie
     mesa_versions.py            version parsing and lifecycle math
     run_notebook.py             run a notebook pinned to a given Mesa version
     normalize_notebook.py       canonicalize .ipynb

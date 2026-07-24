@@ -24,7 +24,8 @@ Non-negotiables when editing:
   newline** — that matches Jupyter's own serialization, so the only diff is
   your actual edit. (When available, `nbformat.write` handles this for you and
   also validates.)
-- **Don't strip outputs** unless the user asks: teaching notebooks are often
+- **Don't strip outputs** unless the user asks — or Step 6's stale-output rule
+  applies (an unexecuted cell whose stored output shows a dead API): teaching notebooks are often
   distributed with outputs visible. Executing at the end regenerates them
   anyway.
 
@@ -76,10 +77,10 @@ the raw file into context. Instead:
 - For repetitive changes across many cells (e.g. the same stale comment in 7
   places), write one small Python script that loops over cells and applies the
   exact transformation — deterministic, reviewable, and identical everywhere.
-- Only code/markdown cells get migrated, but handle the rest: `raw` cells pass
-  through untouched; markdown `attachments` (embedded images) must survive;
-  pre-4.5 notebooks (`nbformat_minor < 5`, Colab-era) have **no cell ids** —
-  don't add them by hand, let `nbformat` decide on write.
+- Code and markdown cells are the main migration surface, and `raw` cells are
+  prose surface too: the scanner scans them with the markdown-scope patterns, so
+  a stale API name in a raw cell is a real finding — fix the text while keeping
+  the cell's type and format fields untouched.
 - Widget leftovers: a `metadata.widgets` block without proper `state` fails
   validation and GitHub rendering, and `application/vnd.jupyter.widget-view+json`
   outputs (e.g. SolaraViz) can't re-render without live state — re-executing
@@ -91,10 +92,18 @@ the raw file into context. Instead:
 Run this after the last edit and the final execution, before declaring done:
 
 1. **Canonicalize**: `uv run --with nbformat python scripts/normalize_notebook.py
-   notebook.ipynb` — a `read → validate → write` round-trip through `nbformat`
-   that restores Jupyter's canonical serialization (list-of-lines sources,
-   indent, trailing newline), erasing artifacts left by NotebookEdit or ad-hoc
-   JSON edits. It fails loudly on schema violations.
+   notebook.ipynb --original /tmp/orig.ipynb` — a `read → validate → write`
+   round-trip through `nbformat` that restores Jupyter's canonical serialization
+   (list-of-lines sources, indent, trailing newline), erasing artifacts left by
+   NotebookEdit or ad-hoc JSON edits. It fails loudly on schema violations
+   (exit 3). With `--original` it also audits the delivered execution state
+   against the pre-edit original and exits 4 on contamination from a run that
+   did not complete: `ERROR-OUTPUT` (a stored traceback the original did not
+   have) or `PARTIAL-RUN` (an `execution_count` written while other non-empty
+   code cells were left unexecuted). Restore the flagged cells'
+   `execution_count`/`outputs` to the original's. A cell that demonstrates a
+   traceback on purpose has that error in the original too, so it never fires;
+   nor does a complete linear run, which numbers every code cell.
 2. **Prove the minimal diff** (the original is in git — the in-place/no-backup
    policy assumes that): 
    ```bash

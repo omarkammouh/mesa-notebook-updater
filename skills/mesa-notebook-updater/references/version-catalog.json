@@ -3,7 +3,7 @@
  "schema": 1,
  "latest_stable": "3.5.1",
  "latest_prerelease": "4.0.0a0",
- "count": 89,
+ "count": 91,
  "releases": [
   {
    "version": "0.5",
@@ -473,6 +473,16 @@
    "note": "Codename Wellton; announced but never uploaded to PyPI — invalid target. Nearest installable: 2.1."
   },
   {
+   "version": "2.0.1",
+   "date": "2023-07-23",
+   "on_pypi": false,
+   "installable": false,
+   "band": "2.1-2.4",
+   "python_pin": "3.11",
+   "install": null,
+   "note": "Git tag only (v2.0.1, same day as 2.1) — never uploaded to PyPI; invalid target. Nearest installable: 2.1."
+  },
+  {
    "version": "2.1",
    "on_pypi": true,
    "date": "2023-07-23",
@@ -611,6 +621,16 @@
    "install": "mesa==2.2.4"
   },
   {
+   "version": "2.2.5",
+   "date": "2024-02-24",
+   "on_pypi": false,
+   "installable": false,
+   "band": "2.1-2.4",
+   "python_pin": "3.11",
+   "install": null,
+   "note": "Git tag only (v2.2.5) — never uploaded to PyPI; invalid target. Nearest installable: 2.2.4 (below) or 2.3.0 (above)."
+  },
+  {
    "version": "2.3.0.dev0",
    "on_pypi": true,
    "date": "2024-02-24",
@@ -646,11 +666,12 @@
    "python_pin": "3.11",
    "install": "mesa==2.3.0",
    "highlights": [
-    "Experimental SolaraViz/JupyterViz added; scheduler-deprecation groundwork"
+    "Experimental SolaraViz, cell_space (CellAgent/OrthogonalMooreGrid) and devs Simulators added"
    ],
    "additions": [
     "SolaraViz (experimental)",
-    "JupyterViz (experimental)"
+    "experimental cell_space (CellAgent, OrthogonalMooreGrid, OrthogonalVonNeumannGrid, HexGrid, Network)",
+    "experimental devs (ABMSimulator/DEVSimulator)"
    ]
   },
   {
@@ -701,7 +722,7 @@
    "python_pin": "3.11",
    "install": "mesa==2.3.4",
    "highlights": [
-    "Last 2.3.x; deprecation warnings for schedulers/old idioms"
+    "Last 2.3.x; deprecation warnings for mesa.flat and other 2.x cleanups (schedulers deprecate at 3.0)"
    ]
   },
   {
@@ -716,7 +737,11 @@
    "python_pin": "3.11",
    "install": "mesa==2.4.0",
    "highlights": [
-    "Final Mesa 2.x release before the 3.0 break"
+    "Final 2.x: AgentSet activation surface lands (shuffle_do, agents_by_type, groupby/agg); DataCollector agenttype_reporters"
+   ],
+   "additions": [
+    "AgentSet surface: shuffle_do, do, agents_by_type, groupby, agg",
+    "DataCollector agenttype_reporters"
    ]
   },
   {
@@ -862,10 +887,9 @@
     "mesa.time schedulers (RandomActivation etc.)"
    ],
    "additions": [
-    "AgentSet (select/groupby/agg/do/shuffle_do)",
+    "AgentSet becomes the primary activation mechanism (surface exists since 2.4)",
     "SolaraViz + make_space_component/make_plot_component",
-    "DataCollector agenttype_reporters",
-    "experimental cell_space",
+    "experimental cell_space (since 2.3; FixedAgent/Grid2DMovingAgent new in 3.0)",
     "experimental PropertyLayer",
     "self.rng (numpy Generator)"
    ]
@@ -923,7 +947,7 @@
    "yanked": false,
    "installable": true,
    "prerelease": true,
-   "band": "3.1",
+   "band": "3.0",
    "python_pin": "3.12",
    "install": "mesa[rec]==3.1.0.dev0"
   },
@@ -1071,8 +1095,7 @@
     "SpaceRenderer",
     "AgentPortrayalStyle",
     "PropertyLayerStyle",
-    "make_plot_component(page=)",
-    "Altair tooltips"
+    "make_plot_component(page=)"
    ]
   },
   {
@@ -1159,7 +1182,7 @@
    "yanked": false,
    "installable": true,
    "prerelease": true,
-   "band": "3.5",
+   "band": "3.4",
    "python_pin": "3.12",
    "install": "mesa[rec]==3.5.0b0"
   },
