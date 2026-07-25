@@ -1,8 +1,0 @@
-#!/bin/sh
-# Refuse to commit a stale mirror of the skill.
-#
-# Install once:  git config core.hooksPath tools/hooks
-#
-# No-op when the skill is not installed locally, so contributors who only have
-# the repo are unaffected.
-exec python3 "$(git rev-parse --show-toplevel)/tools/sync_skill.py"

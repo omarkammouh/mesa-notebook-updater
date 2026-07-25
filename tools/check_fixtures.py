@@ -37,7 +37,7 @@ from pathlib import Path
 TARGET_LADDER = ["3.5.1", "3.3.0", "2.4.0"]
 
 REPO = Path(__file__).resolve().parent.parent
-SKILL = REPO / "skills" / "mesa-notebook-updater"
+SKILL = REPO           # the skill lives at the repo root
 SCANNER = SKILL / "scripts" / "scan_notebook.py"
 INPUTS = REPO / "evals" / "inputs"
 EXPECTED = REPO / "evals" / "expected"

@@ -4,7 +4,8 @@
 Checks, from the repo root (python3 tools/validate_skill.py):
 
   1. SKILL.md has YAML frontmatter with `name` and `description`, and the
-     name matches the skill folder name.
+     name matches SKILL_NAME (the plugin/bundle name, which does not depend on
+     what the checkout directory happens to be called).
   2. Both reference JSON files parse, and every registry regex compiles.
   3. Every registry lifecycle stamp is a real version string (delegates to
      mesa_versions.validate_lifecycle) and the lifecycle self-test passes.
@@ -18,7 +19,8 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-SKILL = REPO / "skills" / "mesa-notebook-updater"
+SKILL = REPO           # the skill lives at the repo root
+SKILL_NAME = "mesa-notebook-updater"
 
 sys.path.insert(0, str(SKILL / "scripts"))
 import mesa_versions  # noqa: E402
@@ -38,8 +40,8 @@ def check_frontmatter() -> None:
     name = re.search(r"^name:\s*(\S+)", front, re.MULTILINE)
     if not name:
         fail("SKILL.md frontmatter missing `name`")
-    if name.group(1) != SKILL.name:
-        fail(f"frontmatter name {name.group(1)!r} != folder name {SKILL.name!r}")
+    if name.group(1) != SKILL_NAME:
+        fail(f"frontmatter name {name.group(1)!r} != skill name {SKILL_NAME!r}")
     if not re.search(r"^description:", front, re.MULTILINE):
         fail("SKILL.md frontmatter missing `description`")
     print("ok  SKILL.md frontmatter (name, description)")

@@ -70,6 +70,29 @@ Fixes from runs of the skill over a four-notebook course repo.
   `verified_absent_through` field), the eval target ladder, and whichever
   release calls itself "Current stable".
 
+Repository layout, no change to the skill's behaviour:
+
+- **The skill now lives at the repository root.** `SKILL.md`, `references/` and
+  `scripts/` moved out of `skills/mesa-notebook-updater/`. This repository holds
+  one skill, so the extra directory only bought a longer path. It also makes the
+  simplest install the correct one: clone the repository straight into
+  `~/.claude/skills/mesa-notebook-updater/` and the checkout *is* the installed
+  skill, so there is nothing to copy and nothing that can drift. Claude Code
+  loads a plugin whose `SKILL.md` sits at its root as a single-skill plugin, and
+  the marketplace entry now points at `./`.
+  If you installed by copying the old `skills/mesa-notebook-updater/` directory,
+  delete it and re-clone; the plugin install path is unchanged.
+- The two `CONTRIBUTING.md` files (repository workflow, skill internals) are now
+  one file at the root.
+- Removed `tools/sync_skill.py` and its pre-commit hook. They kept a repo copy in
+  step with a separately installed copy; with the skill at the root there is no
+  second copy to drift from.
+- `tools/package_skill.py` now builds the bundle from an explicit include list
+  (`SKILL.md`, `CONTRIBUTING.md`, `LICENSE`, `references/`, `scripts/`), so repo
+  scaffolding cannot leak into a `.skill` that ships to claude.ai.
+- README rewritten around the single skill, including how to use it from agents
+  other than Claude.
+
 ## 1.1.0 (2026-07-24)
 
 A knowledge and gates refresh; no change to how you use the skill.

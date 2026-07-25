@@ -1,6 +1,8 @@
 # mesa-notebook-updater
 
-A Claude [Agent Skill](https://agentskills.io) that migrates
+[![CI](https://github.com/omarkammouh/mesa-notebook-updater/actions/workflows/ci.yml/badge.svg)](https://github.com/omarkammouh/mesa-notebook-updater/actions/workflows/ci.yml)
+
+An [Agent Skill](https://agentskills.io) that migrates
 [Mesa](https://github.com/mesa/mesa) agent-based models between Mesa versions.
 Point it at a notebook (or a plain `.py` model) and a target version and it
 brings the code there, in either direction: an old 2.x model up to current
@@ -8,8 +10,10 @@ Mesa, or modern code down to whatever your lab machines are pinned to. If you
 don't name a version, it targets the latest release.
 
 I built this for my own teaching notebooks, so it cares as much about the text
-between the cells as about the code. The bundled scanner is also usable on its
-own, without Claude.
+between the cells as about the code. It works with Claude, and with any other
+agent that can read files and run shell commands — see
+[Other agents](#other-agents). The bundled scanner also runs on its own, with
+no agent at all.
 
 ## Why
 
@@ -31,53 +35,69 @@ the idiom that is current at the target, while prose is changed as little as
 possible (no added commentary, no tone shift, no translation). A separate
 script checks that contract.
 
-## Layout
-
-```
-skills/mesa-notebook-updater/   the skill itself; this is what gets installed
-  SKILL.md                      the workflow
-  CONTRIBUTING.md               internals: registry schema, adding a release
-  references/
-    version-catalog.json        every Mesa release (91 at last count): dates,
-                                python pin, install string, what changed
-    api-registry.json           API patterns with lifecycle stamps (introduced,
-                                deprecated, superseded, removed)
-    version-history.md          per-version notes, plus the "best idiom at this
-                                target" tables for upgrades and downgrades
-    notebook-editing.md         editing .ipynb files without breaking them
-  scripts/                      stdlib Python 3.9+; uv only needed to execute
-    scan_notebook.py            the scanner (code and markdown)
-    check_text_delta.py         the teaching-text check
-    check_report.py             checks the final report's facts block against
-                                the delivered file, so the summary can't lie
-    mesa_versions.py            version parsing and lifecycle math
-    run_notebook.py             run a notebook pinned to a given Mesa version
-    normalize_notebook.py       canonicalize .ipynb
-    update_catalog.py           refresh the catalog from PyPI
-evals/                          8 fixture notebooks with answer keys, see evals/README.md
-tools/                          repo checks and packaging, used by CI
-```
-
 ## Install
 
-Claude.ai (web or desktop): download `mesa-notebook-updater.skill` from the
-[latest release](../../releases/latest), or build it yourself with
-`python3 tools/package_skill.py`, and upload it under Settings, Capabilities,
-Skills.
+### Claude Code
 
-Claude Code, as a plugin:
+Clone the repository straight into your skills directory. The repository *is*
+the skill, so there is no copy step and nothing to keep in sync:
+
+```bash
+git clone https://github.com/omarkammouh/mesa-notebook-updater.git \
+  ~/.claude/skills/mesa-notebook-updater
+```
+
+`git pull` in that directory is how you update. To make it available in one
+project only, clone into `.claude/skills/mesa-notebook-updater` inside that
+project instead.
+
+### Claude Code, as a plugin
 
 ```
 /plugin marketplace add omarkammouh/mesa-notebook-updater
 /plugin install mesa-notebook-updater@mesa-notebook-updater
 ```
 
-Claude Code, manually:
+### claude.ai (web or desktop)
+
+Download `mesa-notebook-updater.skill` from the
+[latest release](../../releases/latest), or build it yourself with
+`python3 tools/package_skill.py`, then upload it under Settings, Capabilities,
+Skills.
+
+### Other agents
+
+Nothing here is Claude-specific. `SKILL.md` is a plain markdown workflow, and
+the scripts are standard-library Python that any agent can run through its
+shell tool. To use it from Codex, Cursor, Copilot, Gemini CLI or anything else,
+clone the repository anywhere and point the agent at the file:
 
 ```bash
-git clone https://github.com/omarkammouh/mesa-notebook-updater.git
-cp -r mesa-notebook-updater/skills/mesa-notebook-updater ~/.claude/skills/
+git clone https://github.com/omarkammouh/mesa-notebook-updater.git ~/skills/mesa-notebook-updater
 ```
+
+Then ask, in whatever agent you are using:
+
+> Read ~/skills/mesa-notebook-updater/SKILL.md and follow that workflow to
+> migrate model.ipynb to the latest Mesa.
+
+For agents that read a project file automatically — Codex and several others
+use `AGENTS.md` — add the pointer there once and drop the path from your
+prompts:
+
+```markdown
+## Migrating Mesa notebooks
+
+Follow ~/skills/mesa-notebook-updater/SKILL.md. Run its scripts by absolute
+path and keep the working directory in this project.
+```
+
+The one thing to keep an eye on with a non-Claude agent is that `SKILL.md`
+asks for a specific discipline — re-scan until zero, don't overshoot the
+target, leave the prose alone — and a weaker agent will drift from it. The
+checks in `scripts/` are there for exactly that reason: `scan_notebook.py`,
+`check_text_delta.py` and `check_report.py` are deterministic, so you can
+verify the result whatever produced it.
 
 ## Usage
 
@@ -100,9 +120,9 @@ warnings.
 
 ### Using the scanner directly
 
-```bash
-cd skills/mesa-notebook-updater
+The scanner is useful on its own, and needs nothing but Python:
 
+```bash
 # what would need to change to run on 3.5.1?
 python3 scripts/scan_notebook.py your_model.ipynb --target 3.5.1
 
@@ -117,15 +137,42 @@ Each finding shows the API's lifecycle, its status at your target, and the
 replacement for that target. Findings marked `judge` are ambiguous on purpose
 and left for a human.
 
+## Layout
+
+The skill sits at the repository root; the rest is scaffolding for testing and
+packaging it.
+
+```
+SKILL.md                 the workflow
+references/
+  version-catalog.json   every Mesa release (91 at last count): dates, python
+                         pin, install string, what changed
+  api-registry.json      API patterns with lifecycle stamps (introduced,
+                         deprecated, superseded, removed)
+  version-history.md     per-version notes, plus the "best idiom at this
+                         target" tables for upgrades and downgrades
+  notebook-editing.md    editing .ipynb files without breaking them
+scripts/                 stdlib Python 3.9+; uv only needed to execute notebooks
+  scan_notebook.py       the scanner (code and markdown)
+  check_text_delta.py    the teaching-text check
+  check_report.py        checks the final report's facts block against the
+                         delivered file, so the summary can't lie
+  mesa_versions.py       version parsing and lifecycle math
+  run_notebook.py        run a notebook pinned to a given Mesa version
+  normalize_notebook.py  canonicalize .ipynb
+  update_catalog.py      refresh the catalog from PyPI
+evals/                   8 fixture notebooks with answer keys, see evals/README.md
+tools/                   repo checks and packaging, used by CI
+CONTRIBUTING.md          internals: registry schema, adding a Mesa release
+```
+
 ## When a new Mesa version comes out
 
 The skill is data-driven, so keeping it current mostly means editing the three
-reference files rather than code. `scripts/update_catalog.py` pulls the
+reference files rather than the code. `scripts/update_catalog.py` pulls the
 mechanical facts from PyPI; the curated parts (what changed, new best idioms,
-lifecycle stamps) have to be added by hand. See [CONTRIBUTING.md](CONTRIBUTING.md)
-for the repo side and
-[skills/mesa-notebook-updater/CONTRIBUTING.md](skills/mesa-notebook-updater/CONTRIBUTING.md)
-for the schema and the verification rules. PRs welcome.
+lifecycle stamps) have to be added by hand. [CONTRIBUTING.md](CONTRIBUTING.md)
+has the step-by-step and the registry schema. PRs welcome.
 
 ## CI
 
@@ -133,7 +180,7 @@ Every push runs three checks, offline and stdlib-only:
 
 - `tools/validate_skill.py`: frontmatter, JSON, every registry regex compiles,
   every lifecycle stamp points at a real release.
-- `tools/check_fixtures.py`: the scanner must still catch all 64 planted
+- `tools/check_fixtures.py`: the scanner must still catch all 65 planted
   findings in the fixture notebooks, across upgrade and downgrade targets.
 - `tools/package_skill.py`: the bundle still builds.
 
@@ -143,7 +190,8 @@ against answer keys) and are run manually when the workflow itself changes.
 ## Requirements
 
 Python 3.9 or newer, standard library only. [`uv`](https://docs.astral.sh/uv/)
-is needed only to execute notebooks pinned to a specific Mesa version.
+is needed only to execute notebooks pinned to a specific Mesa version, and
+`nbformat` (via `uv run --with nbformat`) only for `normalize_notebook.py`.
 
 ## License
 
