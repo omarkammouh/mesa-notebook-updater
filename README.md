@@ -44,6 +44,41 @@ the idiom that is current at the target, while prose is changed as little as
 possible (no added commentary, no tone shift, no translation). A separate
 script checks that contract.
 
+## How it knows what changed
+
+There is no version-to-version diff table anywhere in here. Instead each Mesa API
+gets one entry recording its biography — when it appeared, when it started
+warning, when a better form arrived, when it died — and the status at your target
+is computed by comparing the two. Sixty-five entries cover what 91 releases would
+otherwise need 4095 pairwise diffs to express.
+
+Four states, and the third is the one that matters most:
+
+| | |
+|---|---|
+| `not-yet-introduced` | doesn't exist at your target — the downgrade work list |
+| `removed` | errors at your target |
+| `deprecated` | runs, but warns |
+| **`legacy`** | **runs silently, superseded, migrate anyway** |
+
+That last one is why the project exists. On Mesa 3.5.1 the old
+`mesa.space.MultiGrid` builds fine and raises zero warnings — nothing at runtime
+will ever tell you that `OrthogonalMooreGrid` replaced it in 3.2. That fact lives
+in Mesa's migration guide, so it was written down here, verified against a real
+install, and is now applied mechanically every time.
+
+**Big jumps are the normal case, not the hard one.** Migrating a Mesa 2.x
+notebook to 3.5.1 crosses about forty releases; the scanner prints a *migration
+ladder* of every lifecycle event in between, so nothing gets skipped. It doesn't
+migrate in hops — each finding gives you the form that is correct at your target,
+so it's one edit per construct. Where the right answer genuinely changes partway
+through the jump, the entry carries per-version bands: `mesa.time` was the
+scheduler module, was deleted in 3.1, and returned in 3.5 meaning something
+completely different, and comparing only the endpoints would miss that entirely.
+
+More on all of this, including what it won't touch and what to do when it gets
+something wrong, in the [FAQ](FAQ.md).
+
 ## Install
 
 ### Claude Code
@@ -178,6 +213,7 @@ mesa-notebook-updater.skill   the packaged bundle, ready to upload to claude.ai;
 evals/                   8 fixture notebooks with answer keys, see evals/README.md
 tools/                   repo checks and packaging, used by CI
 CONTRIBUTING.md          internals: registry schema, adding a Mesa release
+FAQ.md                   what it will and won't change, and how it knows
 ```
 
 ## When a new Mesa version comes out
@@ -212,8 +248,10 @@ is needed only to execute notebooks pinned to a specific Mesa version, and
 
 ## Contributing and support
 
-Bug reports, especially "the skill left something stale", are the most useful
-thing you can send. [CONTRIBUTING.md](CONTRIBUTING.md) covers the internals and
+The [FAQ](FAQ.md) covers the common worries — what it changes, what it leaves
+alone, whether your results will move, and what to do when it gets something
+wrong. Bug reports, especially "the skill left something stale", are the most
+useful thing you can send. [CONTRIBUTING.md](CONTRIBUTING.md) covers the internals and
 what each kind of report needs; the issue templates ask for the same things.
 Security reports go through a [private advisory](.github/SECURITY.md).
 

@@ -4,6 +4,18 @@ Versions follow SemVer. The reference data is the public surface: a registry
 or catalog refresh is a minor bump, a change to the workflow contract is a
 major one.
 
+## Unreleased
+
+- **FAQ.md**, and a "How it knows what changed" section in the README. The README
+  claimed the skill takes "an old 2.x model up to current Mesa" and then never
+  said how, so a reader had to take the central claim on faith. Both now explain
+  the lifecycle model, why `legacy` (runs silently, superseded) is a status of its
+  own, and what happens across a jump that crosses forty releases — the ladder,
+  and the per-version bands for cases like `mesa.time`, where comparing the two
+  endpoints gives a confidently wrong answer. The FAQ also covers the questions
+  behind the questions: whether it will rewrite teaching text, whether results
+  will move, whether it runs your code, and what to do when it misses something.
+
 ## 1.2.0 (2026-07-25)
 
 Fixes from runs of the skill over a four-notebook course repo.
