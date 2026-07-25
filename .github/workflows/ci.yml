@@ -24,7 +24,7 @@ jobs:
       - name: The committed .skill bundle is current
         run: python3 tools/package_skill.py --check
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: mesa-notebook-updater.skill
           path: mesa-notebook-updater.skill
