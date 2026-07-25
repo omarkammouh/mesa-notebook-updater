@@ -92,6 +92,16 @@ Repository layout, no change to the skill's behaviour:
   scaffolding cannot leak into a `.skill` that ships to claude.ai.
 - README rewritten around the single skill, including how to use it from agents
   other than Claude.
+- **`mesa-notebook-updater.skill` is now committed at the repository root**, so
+  anyone on claude.ai can download one file and upload it without cloning or
+  building anything. It used to be gitignored and only existed as a release
+  asset, which meant it was unavailable between tags.
+  A committed build artifact can go stale, so two things stop that: the zip is
+  now byte-for-byte deterministic (fixed timestamps and permissions, sorted
+  entries), so rebuilding an unchanged tree produces an identical file and no
+  git diff; and `tools/package_skill.py --check` rebuilds into a temporary file
+  and compares, which CI runs on every push and the release workflow runs before
+  it attaches the bundle to a tag.
 
 ## 1.1.0 (2026-07-24)
 

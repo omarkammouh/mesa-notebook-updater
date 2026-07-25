@@ -1,6 +1,6 @@
-# build artifacts
+# build scratch (the shipped bundle, mesa-notebook-updater.skill, IS tracked --
+# see tools/package_skill.py)
 dist/
-*.skill
 
 # python
 __pycache__/

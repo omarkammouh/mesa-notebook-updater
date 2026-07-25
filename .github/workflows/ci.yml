@@ -21,10 +21,10 @@ jobs:
       - name: Never-miss regression (planted findings across targets)
         run: python3 tools/check_fixtures.py
 
-      - name: Build .skill bundle
-        run: python3 tools/package_skill.py
+      - name: The committed .skill bundle is current
+        run: python3 tools/package_skill.py --check
 
       - uses: actions/upload-artifact@v4
         with:
           name: mesa-notebook-updater.skill
-          path: dist/mesa-notebook-updater.skill
+          path: mesa-notebook-updater.skill

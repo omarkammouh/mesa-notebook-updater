@@ -34,6 +34,9 @@ scripts/                 stdlib-only unless noted; Python 3.9+
   normalize_notebook.py  canonicalizes a notebook via nbformat; with --original it
                          also refuses output left behind by a run that did not finish
   update_catalog.py      refreshes version-catalog.json from PyPI
+mesa-notebook-updater.skill   the packaged bundle (the five entries above, zipped);
+                         committed so claude.ai users can download one file.
+                         Generated — rebuild it, never edit it
 evals/                   8 fixture notebooks with answer keys; see evals/README.md
 tools/                   the three checks CI runs, and the bundle builder
 ```
@@ -189,10 +192,12 @@ Run the three checks from the repo root. They need no network:
 ```bash
 python3 tools/validate_skill.py
 python3 tools/check_fixtures.py
-python3 tools/package_skill.py
+python3 tools/package_skill.py --check
 ```
 
-CI runs exactly these.
+CI runs exactly these. If the last one fails you edited the skill without
+rebuilding the bundle: run `python3 tools/package_skill.py` and include the
+result in your commit.
 
 To exercise the skill itself, point the scanner at any Mesa notebook or `.py`:
 
@@ -235,14 +240,21 @@ voice, so a missing language degrades gracefully.
   should pass before you commit.
 - The skill bundle ships no example models. Fixtures live under `evals/`, which is
   excluded from the packaged `.skill`.
-- The `.skill` bundle is a build artifact. Don't commit it; CI builds it on every
-  push and attaches it to tagged releases.
+- **`mesa-notebook-updater.skill` is committed, and it is generated.** It exists so
+  that someone on claude.ai can download one file without cloning or building.
+  If you change `SKILL.md`, `references/` or `scripts/`, run
+  `python3 tools/package_skill.py` and commit the rebuilt bundle in the same
+  commit. Never hand-edit it. The build is byte-for-byte deterministic — fixed
+  timestamps and permissions, sorted entries — so rebuilding an unchanged tree
+  produces an identical file and leaves no diff; `--check` is what CI runs, and it
+  fails when the bundle and the sources disagree.
 
 ## Releases
 
 Maintainers: update `CHANGELOG.md` and `.claude-plugin/marketplace.json`'s
-`metadata.version`, tag `vX.Y.Z`, push the tag. CI attaches the built `.skill` to
-the GitHub release.
+`metadata.version`, confirm `python3 tools/package_skill.py --check` is clean,
+tag `vX.Y.Z`, push the tag. CI verifies the bundle again and attaches the
+committed `mesa-notebook-updater.skill` to the GitHub release.
 
 ## Questions
 

@@ -15,6 +15,12 @@ agent that can read files and run shell commands — see
 [Other agents](#other-agents). The bundled scanner also runs on its own, with
 no agent at all.
 
+**A ready-to-load bundle is checked in**:
+[`mesa-notebook-updater.skill`](mesa-notebook-updater.skill) at the root of this
+repository. Download that one file and upload it to claude.ai; you don't have to
+clone anything or build it. It is rebuilt from the sources on every change, and
+CI fails if it falls out of step.
+
 ## Why
 
 Two things make hand-migrating Mesa material unreliable.
@@ -60,10 +66,13 @@ project instead.
 
 ### claude.ai (web or desktop)
 
-Download `mesa-notebook-updater.skill` from the
-[latest release](../../releases/latest), or build it yourself with
-`python3 tools/package_skill.py`, then upload it under Settings, Capabilities,
-Skills.
+Download [`mesa-notebook-updater.skill`](mesa-notebook-updater.skill) from this
+repository — on the file's page, use the download button — and upload it under
+Settings, Capabilities, Skills. Nothing to build.
+
+The same file is attached to every [tagged release](../../releases/latest) if you
+would rather pin a version, and `python3 tools/package_skill.py` rebuilds it from
+the sources.
 
 ### Other agents
 
@@ -161,6 +170,8 @@ scripts/                 stdlib Python 3.9+; uv only needed to execute notebooks
   run_notebook.py        run a notebook pinned to a given Mesa version
   normalize_notebook.py  canonicalize .ipynb
   update_catalog.py      refresh the catalog from PyPI
+mesa-notebook-updater.skill   the packaged bundle, ready to upload to claude.ai;
+                         built from the files above by tools/package_skill.py
 evals/                   8 fixture notebooks with answer keys, see evals/README.md
 tools/                   repo checks and packaging, used by CI
 CONTRIBUTING.md          internals: registry schema, adding a Mesa release
@@ -182,7 +193,10 @@ Every push runs three checks, offline and stdlib-only:
   every lifecycle stamp points at a real release.
 - `tools/check_fixtures.py`: the scanner must still catch all 65 planted
   findings in the fixture notebooks, across upgrade and downgrade targets.
-- `tools/package_skill.py`: the bundle still builds.
+- `tools/package_skill.py --check`: the committed `.skill` still matches
+  `SKILL.md`, `references/` and `scripts/`. The build is byte-for-byte
+  deterministic, so this fails only when someone edits the skill and forgets to
+  rebuild the bundle.
 
 The evals in `evals/evals.json` go further (full agent-run migrations, graded
 against answer keys) and are run manually when the workflow itself changes.
