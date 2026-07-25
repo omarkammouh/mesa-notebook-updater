@@ -1,0 +1,12 @@
+version: 2
+updates:
+  # The scripts are stdlib-only, so the only dependencies to keep current are the
+  # actions the two workflows pin.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "ci"
+    labels:
+      - dependencies

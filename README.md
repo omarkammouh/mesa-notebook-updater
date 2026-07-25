@@ -1,6 +1,9 @@
 # mesa-notebook-updater
 
 [![CI](https://github.com/omarkammouh/mesa-notebook-updater/actions/workflows/ci.yml/badge.svg)](https://github.com/omarkammouh/mesa-notebook-updater/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
+[![Mesa releases cataloged](https://img.shields.io/badge/Mesa%20releases%20cataloged-91-blue.svg)](references/version-catalog.json)
 
 An [Agent Skill](https://agentskills.io) that migrates
 [Mesa](https://github.com/mesa/mesa) agent-based models between Mesa versions.
@@ -206,6 +209,19 @@ against answer keys) and are run manually when the workflow itself changes.
 Python 3.9 or newer, standard library only. [`uv`](https://docs.astral.sh/uv/)
 is needed only to execute notebooks pinned to a specific Mesa version, and
 `nbformat` (via `uv run --with nbformat`) only for `normalize_notebook.py`.
+
+## Contributing and support
+
+Bug reports, especially "the skill left something stale", are the most useful
+thing you can send. [CONTRIBUTING.md](CONTRIBUTING.md) covers the internals and
+what each kind of report needs; the issue templates ask for the same things.
+Security reports go through a [private advisory](.github/SECURITY.md).
+
+## Citing
+
+If this saved you a week of migrating course notebooks and you'd like to say so
+in a paper, [CITATION.cff](CITATION.cff) has the metadata, and GitHub's
+"Cite this repository" button renders it as BibTeX or APA.
 
 ## License
 

@@ -1,0 +1,22 @@
+# https://editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{json,yml,yaml,cff}]
+indent_size = 2
+
+[*.md]
+# trailing whitespace is a line break in markdown
+trim_trailing_whitespace = false
+
+[*.ipynb]
+# generated JSON; leave it exactly as nbformat writes it
+indent_size = 1
+trim_trailing_whitespace = false

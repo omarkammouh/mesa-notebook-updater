@@ -1,0 +1,55 @@
+name: False positive or wrong replacement
+description: The scanner flagged something that is fine at that target, or offered a replacement that is wrong there.
+title: "[wrong] "
+labels: ["false-positive"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Note that the scanner over-reports on purpose: anything marked `judge` is
+        ambiguous by design and left for a human to settle, so a `judge` item is
+        usually not a bug. Findings with a hard status — `removed`, `deprecated`,
+        `legacy`, `not-yet-introduced`, `install`, `stale-term` — are the ones
+        that should be right.
+
+  - type: input
+    id: target
+    attributes:
+      label: Target version
+      placeholder: "3.3.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: finding
+    attributes:
+      label: The finding
+      description: The whole block the scanner printed, including the registry `api:` id and the status.
+      render: text
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is wrong with it
+      options:
+        - The API is fine at this target and should not be flagged
+        - The status is wrong (e.g. says removed, actually only deprecated)
+        - The replacement does not exist or does not work at this target
+        - The replacement works but is not the current-best idiom at this target
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: How you checked the real behaviour
+      description: >-
+        A pinned probe is what settles these, since every stamp in the registry was
+        verified this way. Paste the command and its output.
+      render: shell
+      placeholder: |
+        uv run --python 3.12 --with "mesa[rec]==3.3.0" python -c "import mesa; ..."
+    validations:
+      required: true

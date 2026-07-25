@@ -4,7 +4,7 @@ Versions follow SemVer. The reference data is the public surface: a registry
 or catalog refresh is a minor bump, a change to the workflow contract is a
 major one.
 
-## Unreleased
+## 1.2.0 (2026-07-25)
 
 Fixes from runs of the skill over a four-notebook course repo.
 
@@ -102,6 +102,15 @@ Repository layout, no change to the skill's behaviour:
   git diff; and `tools/package_skill.py --check` rebuilds into a temporary file
   and compares, which CI runs on every push and the release workflow runs before
   it attaches the bundle to a tag.
+- Repository furniture for outside contributors: a code of conduct, a security
+  policy that says plainly which scripts only read files and which one executes
+  the notebook you point it at, a pull-request template whose checklist is the
+  three CI commands, and three issue forms matching the bug classes this project
+  actually gets — a missed finding, a false positive or wrong replacement, and a
+  new Mesa release to catalog. The last one doubles as the maintainer's checklist.
+  Also `CITATION.cff`, so the repository can be cited; `.github/dependabot.yml`
+  to keep the workflow actions current (the scripts have no dependencies to
+  update); and `.editorconfig`.
 
 ## 1.1.0 (2026-07-24)
 

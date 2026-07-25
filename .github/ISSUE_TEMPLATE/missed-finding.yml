@@ -1,0 +1,58 @@
+name: Missed finding (the skill left something stale)
+description: The scanner said clean, but something in the model or the prose was still on an old Mesa dialect.
+title: "[missed] "
+labels: ["missed-finding"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is the bug class I care most about. A migration that misses one
+        `RandomActivation` in a comment teaches students an API that no longer
+        exists, and a green run will not tell you.
+
+  - type: input
+    id: target
+    attributes:
+      label: Target version
+      description: The `--target` you scanned at.
+      placeholder: "3.5.1"
+    validations:
+      required: true
+
+  - type: textarea
+    id: stale
+    attributes:
+      label: What stayed stale
+      description: >-
+        The exact line, and where it lives — code cell, markdown cell, comment or
+        docstring. Findings in prose count as much as findings in code.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What it should have become at that target
+      description: If you know the replacement, give it. If not, say what the old form does at the target (errors, warns, or runs but is superseded).
+    validations:
+      required: true
+
+  - type: textarea
+    id: scan
+    attributes:
+      label: Scanner output
+      description: "`python3 scripts/scan_notebook.py YOUR.ipynb --target X.Y.Z --json`. Paste it, or attach the file."
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: fixture
+    attributes:
+      label: A minimal reproduction
+      description: >-
+        Ideally a small notebook in the style of `evals/inputs/` — synthetic, MIT-publishable,
+        runs green on its own era's Mesa. A snippet is fine if a full notebook is awkward.
+    validations:
+      required: false

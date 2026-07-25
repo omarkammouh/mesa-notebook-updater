@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: mesa-notebook-updater
+abstract: >-
+  An Agent Skill that migrates Mesa agent-based models and teaching notebooks
+  between Mesa releases, in either direction, using a lifecycle database of the
+  Mesa API rather than pattern-matching on the current version. It computes what
+  is current at a named target version, rewrites code to that target's idiom,
+  and holds the surrounding teaching text to a minimal-delta contract.
+type: software
+authors:
+  - family-names: Kammouh
+    given-names: Omar
+    affiliation: Delft University of Technology
+version: 1.2.0
+date-released: "2026-07-25"
+license: MIT
+repository-code: "https://github.com/omarkammouh/mesa-notebook-updater"
+url: "https://github.com/omarkammouh/mesa-notebook-updater"
+keywords:
+  - agent-based modeling
+  - mesa
+  - jupyter
+  - migration
+  - teaching materials
+  - agent skill

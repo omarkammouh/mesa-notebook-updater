@@ -3,6 +3,10 @@
 This repository is one skill. `SKILL.md` and the two directories next to it are
 the skill; everything else is scaffolding for testing and packaging it.
 
+By taking part you agree to the [Code of Conduct](.github/CODE_OF_CONDUCT.md).
+Vulnerabilities go through a private advisory, not the issue tracker — see the
+[security policy](.github/SECURITY.md).
+
 Extending the skill is mostly data, not code. When Mesa ships a release, or you
 find an API the skill doesn't know about, you add a few facts to the reference
 files. The scripts are generic and usually don't change.
@@ -258,5 +262,8 @@ committed `mesa-notebook-updater.skill` to the GitHub release.
 
 ## Questions
 
-Open an issue. For "is this notebook migrated correctly" questions, attach the
-scanner's `--json` output at your target; that usually settles it.
+Open an issue — there are templates for the three common cases (a missed
+finding, a false positive or wrong replacement, and a new Mesa release to
+catalog), and they ask for the evidence each one needs. For "is this notebook
+migrated correctly" questions, attach the scanner's `--json` output at your
+target; that usually settles it.

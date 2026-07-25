@@ -1,0 +1,41 @@
+name: New Mesa release to catalog
+description: Mesa shipped a version the skill doesn't know about yet.
+title: "[release] Mesa X.Y.Z"
+labels: ["mesa-release"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Adding a release is mostly data entry, and CONTRIBUTING.md has the
+        step-by-step. Open this issue if you want to flag the release, or use it as
+        your own checklist while you prepare the PR.
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: "3.6.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Release notes and migration guide
+      description: Links, plus anything in them that changes an idiom rather than just adding a feature.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: What the release needs (from CONTRIBUTING.md)
+      options:
+        - label: "`scripts/update_catalog.py` run, and the new entry curated (python_pin, install, band, highlights)"
+        - label: "\"Current stable\" moved to the new release in the catalog highlights"
+        - label: "A section appended to `references/version-history.md`"
+        - label: "The §15b band table extended, if the current-best idiom changed"
+        - label: "Registry stamps added or updated, each verified against a real install"
+        - label: "`TARGET_LADDER` in `tools/check_fixtures.py` bumped to the new stable"
+        - label: "`verified_absent_through` entries re-probed against the new release"
+        - label: "Bundle rebuilt (`python3 tools/package_skill.py`) and committed"

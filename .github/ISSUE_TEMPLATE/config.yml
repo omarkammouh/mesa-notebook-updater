@@ -1,0 +1,14 @@
+blank_issues_enabled: true
+contact_links:
+  - name: How to report well
+    url: https://github.com/omarkammouh/mesa-notebook-updater/blob/main/CONTRIBUTING.md
+    about: >-
+      For "is my notebook migrated correctly", attach the scanner's --json output at
+      your target — that usually settles it. CONTRIBUTING has what each kind of
+      report needs.
+  - name: Mesa itself
+    url: https://github.com/mesa/mesa/issues
+    about: Bugs in Mesa, rather than in this skill's knowledge of Mesa, belong upstream.
+  - name: Security report
+    url: https://github.com/omarkammouh/mesa-notebook-updater/security/advisories/new
+    about: Report privately rather than on the public tracker.
